@@ -296,8 +296,9 @@ export async function searchIssues(
     // Try GraphQL first (more reliable with GitHub App tokens)
     try {
         return await searchIssuesGraphQL(query);
-    } catch {
-        // Fall back to REST API
+    } catch (error) {
+        // Fall back to REST API, but log the GraphQL error for debugging
+        console.warn('GraphQL search failed, falling back to REST API. Error:', error);
     }
 
     const { owner, repo } = getRepoContext();
@@ -347,18 +348,16 @@ export async function searchIssuesGraphQL(
     const isClosed = query.includes('is:closed') || query.includes('state:closed');
     const states = isClosed ? 'CLOSED' : isOpen ? 'OPEN' : null;
     
-    const statesArg = states ? `, states: ${states}` : '';
-    const bodyField = includeBody ? 'body' : '';
-    
+    // Use proper GraphQL variables instead of string interpolation for robustness
     const gqlQuery = `
-        query GetIssues($owner: String!, $repo: String!, $first: Int!) {
+        query GetIssues($owner: String!, $repo: String!, $first: Int!, $states: [IssueState!], $includeBody: Boolean!) {
             repository(owner: $owner, name: $repo) {
-                issues(first: $first, orderBy: {field: UPDATED_AT, direction: DESC}${statesArg}) {
+                issues(first: $first, orderBy: {field: UPDATED_AT, direction: DESC}, states: $states) {
                     nodes {
                         number
                         title
                         state
-                        ${bodyField}
+                        body @include(if: $includeBody)
                         labels(first: 10) {
                             nodes {
                                 name
@@ -369,6 +368,11 @@ export async function searchIssuesGraphQL(
             }
         }
     `;
+    
+    const variables: Record<string, unknown> = { owner, repo, first, includeBody };
+    if (states) {
+        variables.states = [states];
+    }
     
     const result = await executeGraphQL<{
         repository: {
@@ -382,7 +386,7 @@ export async function searchIssuesGraphQL(
                 }>;
             };
         };
-    }>(gqlQuery, { owner, repo, first });
+    }>(gqlQuery, variables);
     
     return result.repository.issues.nodes.map((issue) => ({
         number: issue.number,
