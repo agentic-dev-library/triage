@@ -7,7 +7,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../src/ai.js', () => {
+vi.mock('../../src/ai.ts', () => {
     return {
         generate: vi.fn(async (prompt: string) => `Generated response for: ${prompt}`),
         generateWithTools: vi.fn(async () => ({

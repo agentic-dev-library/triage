@@ -15,7 +15,7 @@ const FIXTURES_DIR = path.join(process.cwd(), 'tests', 'cassettes', 'ai-provider
 describe('integration: AI Providers', () => {
     const testPrompt = 'What is 2+2? Respond with only the number.';
 
-    // Skip these tests in CI if API keys are not available
+    // Skip these tests in CI if OLLAMA API key is not available
     const skipIfNoKeys = process.env.CI && !process.env.OLLAMA_API_KEY;
 
     describe('Ollama Provider', () => {
