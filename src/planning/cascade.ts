@@ -169,9 +169,9 @@ async function executeDevelopStep(config: CascadeConfig, spawned: SpawnedTask[])
     const issues = await searchIssues('is:open is:issue label:ready-for-aider');
 
     if (config.dryRun) {
-        issues
-            .slice(0, config.maxParallel)
-            .forEach((issue) => spawned.push({ step: 'test', target: String(issue.number) }));
+        for (const issue of issues.slice(0, config.maxParallel)) {
+            spawned.push({ step: 'test', target: String(issue.number) });
+        }
         return { step: 'develop', status: 'success', duration: 0, spawned };
     }
 
@@ -195,9 +195,9 @@ async function executeTestStep(config: CascadeConfig, spawned: SpawnedTask[]): P
     const issues = await searchIssues('is:open is:issue label:needs-tests');
 
     if (config.dryRun) {
-        issues
-            .slice(0, config.maxParallel)
-            .forEach((issue) => spawned.push({ step: 'verify', target: String(issue.number) }));
+        for (const issue of issues.slice(0, config.maxParallel)) {
+            spawned.push({ step: 'verify', target: String(issue.number) });
+        }
         return { step: 'test', status: 'success', duration: 0, spawned };
     }
 
@@ -232,9 +232,9 @@ async function executeFixStep(config: CascadeConfig, spawned: SpawnedTask[]): Pr
     const issues = await searchIssues('is:open is:issue label:bug label:needs-fix');
 
     if (config.dryRun) {
-        issues
-            .slice(0, config.maxParallel)
-            .forEach((issue) => spawned.push({ step: 'verify', target: String(issue.number) }));
+        for (const issue of issues.slice(0, config.maxParallel)) {
+            spawned.push({ step: 'verify', target: String(issue.number) });
+        }
         return { step: 'fix', status: 'success', duration: 0, spawned };
     }
 
@@ -253,7 +253,9 @@ async function executeVerifyStep(config: CascadeConfig, spawned: SpawnedTask[]):
     const prs = await searchIssues('is:open is:pr label:needs-verification');
 
     if (config.dryRun) {
-        prs.slice(0, config.maxParallel).forEach((pr) => spawned.push({ step: 'review', target: String(pr.number) }));
+        for (const pr of prs.slice(0, config.maxParallel)) {
+            spawned.push({ step: 'review', target: String(pr.number) });
+        }
         return { step: 'verify', status: 'success', duration: 0, spawned };
     }
 
@@ -272,7 +274,9 @@ async function executeReviewStep(config: CascadeConfig, spawned: SpawnedTask[]):
     const prs = await searchIssues('is:open is:pr');
 
     if (config.dryRun) {
-        prs.slice(0, config.maxParallel).forEach((pr) => spawned.push({ step: 'merge', target: String(pr.number) }));
+        for (const pr of prs.slice(0, config.maxParallel)) {
+            spawned.push({ step: 'merge', target: String(pr.number) });
+        }
         return { step: 'review', status: 'success', duration: 0, spawned };
     }
 

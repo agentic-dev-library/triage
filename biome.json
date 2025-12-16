@@ -25,7 +25,8 @@
                 "noExcessiveCognitiveComplexity": "warn"
             },
             "style": {
-                "useConst": "error"
+                "useConst": "error",
+                "noNonNullAssertion": "warn"
             },
             "suspicious": {
                 "noExplicitAny": "off"
@@ -46,6 +47,16 @@
                 "rules": {
                     "suspicious": {
                         "noExplicitAny": "off"
+                    }
+                }
+            }
+        },
+        {
+            "includes": ["src/execution/**/*.ts"],
+            "linter": {
+                "rules": {
+                    "style": {
+                        "noNonNullAssertion": "off"
                     }
                 }
             }
