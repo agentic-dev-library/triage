@@ -57,6 +57,7 @@ USER triage
 WORKDIR /home/triage
 
 # Setup pnpm for global installs
+ENV SHELL=/bin/bash
 RUN pnpm setup
 ENV PNPM_HOME="/home/triage/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
