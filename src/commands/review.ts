@@ -3,8 +3,9 @@
  */
 
 import pc from 'picocolors';
+import { getPullRequest } from '../github.js';
 import { runAgenticTask } from '../mcp.js';
-import { getPullRequest, getRepoContext } from '../octokit.js';
+import { getRepoContext } from '../octokit.js';
 
 const SYSTEM_PROMPT = `You are a senior code reviewer for Strata, a React Three Fiber procedural graphics library.
 

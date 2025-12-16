@@ -1,7 +1,8 @@
 import { execFileSync } from 'node:child_process';
 import pc from 'picocolors';
 import { generateWithTools } from '../ai.js';
-import { commentOnPR, getPullRequest } from '../octokit.js';
+import { getPullRequest } from '../github.js';
+import { commentOnPR } from '../octokit.js';
 import { createPlaywrightClient, getPlaywrightTools, type MCPClient } from '../playwright.js';
 
 const SYSTEM_PROMPT = `You are a QA engineer verifying changes for Strata, a procedural 3D graphics library for React Three Fiber.

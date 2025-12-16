@@ -163,7 +163,10 @@ export class HttpRecorder {
             const shouldIntercept = this.options.hosts.some((host) => url.hostname.includes(host) || host === '*');
 
             if (!shouldIntercept) {
-                return this.originalFetch?.(input, init);
+                if (!this.originalFetch) {
+                    throw new Error('Original fetch not available');
+                }
+                return this.originalFetch(input, init);
             }
 
             if (this.options.mode === 'playback') {
@@ -191,7 +194,10 @@ export class HttpRecorder {
         const startTime = Date.now();
 
         // Make the actual request
-        const response = await this.originalFetch?.(request.clone());
+        if (!this.originalFetch) {
+            throw new Error('Original fetch not available');
+        }
+        const response = await this.originalFetch(request.clone());
 
         // Clone response to read body
         const responseClone = response.clone();

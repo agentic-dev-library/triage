@@ -547,7 +547,7 @@ export class BeadsProvider implements TriageProvider {
             url: undefined, // Beads is local-first
             metadata: {
                 raw: data,
-                hasBlockers: data.blockedBy?.length > 0,
+                hasBlockers: (data.blockedBy?.length ?? 0) > 0,
                 childCount: data.children?.length || 0,
             },
         };
