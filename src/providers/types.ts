@@ -332,7 +332,7 @@ export function priorityToNumber(priority: IssuePriority): number {
  * Map provider status strings to normalized status
  */
 export function normalizeStatus(value: string): IssueStatus {
-    const lower = value.toLowerCase().replace(/[_-]/g, '');
+    const lower = value.toLowerCase().replace(/[_-]/g, '').replace(/\s/g, '');
     if (lower === 'open' || lower === 'new' || lower === 'todo') return 'open';
     if (lower === 'inprogress' || lower === 'active' || lower === 'doing') return 'in_progress';
     if (lower === 'blocked' || lower === 'waiting') return 'blocked';

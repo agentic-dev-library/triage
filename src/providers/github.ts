@@ -129,9 +129,12 @@ export class GitHubProvider implements TriageProvider {
 
         if (options?.status) {
             const statuses = Array.isArray(options.status) ? options.status : [options.status];
-            if (statuses.includes('closed')) args.push('--state', 'closed');
-            else if (statuses.every((s) => s !== 'closed')) args.push('--state', 'open');
-            else args.push('--state', 'all');
+            const hasOpen = statuses.some((s) => s === 'open' || s === 'in_progress' || s === 'blocked');
+            const hasClosed = statuses.includes('closed');
+
+            if (hasOpen && hasClosed) args.push('--state', 'all');
+            else if (hasClosed) args.push('--state', 'closed');
+            else args.push('--state', 'open');
         }
 
         if (options?.limit) args.push('--limit', String(options.limit));

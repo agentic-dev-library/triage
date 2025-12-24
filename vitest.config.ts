@@ -13,7 +13,14 @@ export default defineConfig({
             // - Focus on the core library surfaces (AI + execution + report parsing).
             // - Exclude CLI entrypoints, command wiring, and adapters that are exercised via
             //   end-to-end workflows rather than unit tests.
-            include: ['src/ai.ts', 'src/test-results.ts', 'src/execution/**/*.ts'],
+            include: [
+                'src/ai.ts',
+                'src/test-results.ts',
+                'src/execution/**/*.ts',
+                'src/providers/**/*.ts',
+                'src/triage/**/*.ts',
+                'src/tools/**/*.ts',
+            ],
             exclude: [
                 'node_modules',
                 'dist',

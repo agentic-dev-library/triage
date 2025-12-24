@@ -49,6 +49,6 @@ export const updateIssueTool = tool({
             body: updates.body,
             labels,
         });
-        return { id, ...updates };
+        return { id, ...updates, labels: labels || updates.labels };
     },
 } as any);
