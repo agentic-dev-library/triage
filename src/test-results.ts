@@ -191,36 +191,64 @@ export function formatForAI(report: TestReport): string {
     }
 
     // Failed tests
+    lines.push(...formatFailedTests(report));
+
+    // Coverage
+    lines.push(...formatCoverage(report));
+
+    return lines.join('\n');
+}
+
+/**
+ * Format failed tests section
+ */
+function formatFailedTests(report: TestReport): string[] {
+    const lines: string[] = [];
     const failed = getFailedTests(report);
     if (failed.length > 0) {
         lines.push('## Failed Tests');
         for (const test of failed) {
-            lines.push(`### ${test.fullName}`);
-            lines.push(`- File: ${test.file}${test.line ? `:${test.line}` : ''}`);
-            lines.push(`- Duration: ${test.duration}ms`);
-            if (test.error) {
-                lines.push('');
-                lines.push('**Error:**');
-                lines.push('```');
-                lines.push(test.error.message);
-                if (test.error.codeFrame) {
-                    lines.push('');
-                    lines.push(test.error.codeFrame);
-                }
-                lines.push('```');
-                if (test.error.diff) {
-                    lines.push('');
-                    lines.push('**Diff:**');
-                    lines.push('```diff');
-                    lines.push(test.error.diff);
-                    lines.push('```');
-                }
-            }
-            lines.push('');
+            lines.push(...formatSingleFailedTest(test));
         }
     }
+    return lines;
+}
 
-    // Coverage
+/**
+ * Format a single failed test
+ */
+function formatSingleFailedTest(test: TestResult): string[] {
+    const lines: string[] = [];
+    lines.push(`### ${test.fullName}`);
+    lines.push(`- File: ${test.file}${test.line ? `:${test.line}` : ''}`);
+    lines.push(`- Duration: ${test.duration}ms`);
+    if (test.error) {
+        lines.push('');
+        lines.push('**Error:**');
+        lines.push('```');
+        lines.push(test.error.message);
+        if (test.error.codeFrame) {
+            lines.push('');
+            lines.push(test.error.codeFrame);
+        }
+        lines.push('```');
+        if (test.error.diff) {
+            lines.push('');
+            lines.push('**Diff:**');
+            lines.push('```diff');
+            lines.push(test.error.diff);
+            lines.push('```');
+        }
+    }
+    lines.push('');
+    return lines;
+}
+
+/**
+ * Format coverage section
+ */
+function formatCoverage(report: TestReport): string[] {
+    const lines: string[] = [];
     if (report.coverage) {
         lines.push('## Coverage');
         lines.push(`- Lines: ${report.coverage.lines.percentage.toFixed(1)}%`);
@@ -237,6 +265,5 @@ export function formatForAI(report: TestReport): string {
             lines.push('');
         }
     }
-
-    return lines.join('\n');
+    return lines;
 }

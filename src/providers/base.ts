@@ -34,7 +34,7 @@ export interface TriageProvider {
     }): Promise<TriageIssue>;
     updateIssue(id: string, updates: Partial<TriageIssue>): Promise<TriageIssue>;
     searchIssues(query: string): Promise<TriageIssue[]>;
-    
+
     // Project/Sprint tools
     listSprints?(): Promise<any[]>;
     getCurrentSprint?(): Promise<any>;

@@ -1,11 +1,5 @@
-import type { 
-    TriageIssue, 
-    TriageProvider, 
-    IssueStatus, 
-    IssuePriority, 
-    IssueType 
-} from './base.js';
-import { getIssue, createIssue, updateIssue, searchIssues } from '../octokit.js';
+import { createIssue, getIssue, searchIssues, updateIssue } from '../octokit.js';
+import type { IssuePriority, IssueStatus, IssueType, TriageIssue, TriageProvider } from './base.js';
 
 export class GitHubProvider implements TriageProvider {
     private owner?: string;
@@ -28,10 +22,14 @@ export class GitHubProvider implements TriageProvider {
         let query = '';
         if (filters?.status) query += `is:${filters.status === 'closed' ? 'closed' : 'open'} `;
         if (filters?.assignee) query += `assignee:${filters.assignee} `;
-        if (filters?.labels) filters.labels.forEach(l => query += `label:"${l}" `);
-        
+        if (filters?.labels) {
+            for (const l of filters.labels) {
+                query += `label:"${l}" `;
+            }
+        }
+
         const issues = await searchIssues(query);
-        return issues.map(issue => ({
+        return issues.map((issue) => ({
             id: String(issue.number),
             title: issue.title,
             body: '', // searchIssues doesn't return body by default in octokit.js
@@ -85,7 +83,7 @@ export class GitHubProvider implements TriageProvider {
 
     async searchIssues(query: string): Promise<TriageIssue[]> {
         const issues = await searchIssues(query);
-        return issues.map(issue => ({
+        return issues.map((issue) => ({
             id: String(issue.number),
             title: issue.title,
             body: '',

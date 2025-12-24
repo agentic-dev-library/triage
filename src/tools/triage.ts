@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getTriageConnectors } from '../providers/index.js';
 import { getPullRequest } from '../octokit.js';
+import { getTriageConnectors } from '../providers/index.js';
 
 export const triageTool = tool({
     description: 'Perform a triage analysis of an issue or pull request.',

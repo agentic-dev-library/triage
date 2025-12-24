@@ -1,11 +1,5 @@
-import { LinearClient, type Issue, type IssueConnection } from '@linear/sdk';
-import type { 
-    TriageIssue, 
-    TriageProvider, 
-    IssueStatus, 
-    IssuePriority, 
-    IssueType 
-} from './base.js';
+import { type Issue, LinearClient } from '@linear/sdk';
+import type { IssuePriority, IssueStatus, IssueType, TriageIssue, TriageProvider } from './base.js';
 
 export interface LinearConfig {
     apiKey: string;
@@ -25,13 +19,11 @@ export class LinearProvider implements TriageProvider {
         const state = await issue.state;
         const labels = await issue.labels();
         const assignee = await issue.assignee;
-        
-        const labelNames = labels.nodes.map(l => l.name);
-        
+
+        const labelNames = labels.nodes.map((l) => l.name);
+
         // Derive type from labels
-        const typeLabel = labelNames.find(l => 
-            ['bug', 'feature', 'task', 'chore', 'docs'].includes(l.toLowerCase())
-        );
+        const typeLabel = labelNames.find((l) => ['bug', 'feature', 'task', 'chore', 'docs'].includes(l.toLowerCase()));
 
         return {
             id: issue.id,
@@ -48,21 +40,31 @@ export class LinearProvider implements TriageProvider {
 
     private mapPriorityFromLinear(priority: number): IssuePriority {
         switch (priority) {
-            case 1: return 'critical';
-            case 2: return 'high';
-            case 3: return 'medium';
-            case 4: return 'low';
-            default: return 'backlog';
+            case 1:
+                return 'critical';
+            case 2:
+                return 'high';
+            case 3:
+                return 'medium';
+            case 4:
+                return 'low';
+            default:
+                return 'backlog';
         }
     }
 
     private mapPriorityToLinear(priority?: IssuePriority): number {
         switch (priority) {
-            case 'critical': return 1;
-            case 'high': return 2;
-            case 'medium': return 3;
-            case 'low': return 4;
-            default: return 0;
+            case 'critical':
+                return 1;
+            case 'high':
+                return 2;
+            case 'medium':
+                return 3;
+            case 'low':
+                return 4;
+            default:
+                return 0;
         }
     }
 
@@ -83,7 +85,7 @@ export class LinearProvider implements TriageProvider {
             first: filters?.limit || 50,
         });
 
-        return Promise.all(issues.nodes.map(issue => this.mapIssue(issue)));
+        return Promise.all(issues.nodes.map((issue) => this.mapIssue(issue)));
     }
 
     async getIssue(id: string): Promise<TriageIssue> {
@@ -107,7 +109,7 @@ export class LinearProvider implements TriageProvider {
 
         // Linear needs label IDs usually, but let's see if it handles names or if we need to fetch them
         // For simplicity in this first version, we'll focus on title/body/team
-        
+
         const response = await this.client.createIssue({
             teamId: this.teamId,
             title: issue.title,
@@ -142,25 +144,26 @@ export class LinearProvider implements TriageProvider {
         const issues = await this.client.issues({
             filter: {
                 team: { id: { eq: this.teamId } },
-                or: [
-                    { title: { contains: query } },
-                    { description: { contains: query } },
-                ],
+                or: [{ title: { contains: query } }, { description: { contains: query } }],
             },
         });
 
-        return Promise.all(issues.nodes.map(issue => this.mapIssue(issue)));
+        return Promise.all(issues.nodes.map((issue) => this.mapIssue(issue)));
     }
 
     async listSprints(): Promise<any[]> {
         const team = await this.client.team(this.teamId);
         const cycles = await team.cycles();
-        return cycles.nodes.map(cycle => ({
+        return cycles.nodes.map((cycle) => ({
             id: cycle.id,
             name: `Cycle ${cycle.number}`,
             startsAt: cycle.startsAt,
             endsAt: cycle.endsAt,
-            state: cycle.completedAt ? 'completed' : (cycle.startsAt <= new Date() && cycle.endsAt >= new Date() ? 'active' : 'upcoming'),
+            state: cycle.completedAt
+                ? 'completed'
+                : cycle.startsAt <= new Date() && cycle.endsAt >= new Date()
+                  ? 'active'
+                  : 'upcoming',
         }));
     }
 
@@ -168,10 +171,8 @@ export class LinearProvider implements TriageProvider {
         const team = await this.client.team(this.teamId);
         const cycles = await team.cycles();
         const now = new Date();
-        const current = cycles.nodes.find(cycle => 
-            !cycle.completedAt && 
-            cycle.startsAt <= now && 
-            cycle.endsAt >= now
+        const current = cycles.nodes.find(
+            (cycle) => !cycle.completedAt && cycle.startsAt <= now && cycle.endsAt >= now
         );
         if (!current) return null;
         return {

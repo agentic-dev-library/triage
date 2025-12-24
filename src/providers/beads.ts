@@ -1,14 +1,10 @@
-import type { 
-    TriageIssue, 
-    TriageProvider, 
-    IssueStatus, 
-    IssuePriority, 
-    IssueType 
-} from './base.js';
+import type { TriageIssue, TriageProvider } from './base.js';
 
 export class BeadsProvider implements TriageProvider {
-    constructor(_config: { root?: string }) {
-        // Implementation for Beads provider would go here
+    private root?: string;
+
+    constructor(config: { root?: string } = {}) {
+        this.root = config.root;
     }
 
     async listIssues(_filters?: any): Promise<TriageIssue[]> {

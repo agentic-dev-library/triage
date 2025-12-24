@@ -1,12 +1,12 @@
-import { LinearProvider, type LinearConfig } from './linear.js';
-import { GitHubProvider } from './github.js';
-import { BeadsProvider } from './beads.js';
 import type { TriageProvider } from './base.js';
+import { BeadsProvider } from './beads.js';
+import { GitHubProvider } from './github.js';
+import { type LinearConfig, LinearProvider } from './linear.js';
 
 export * from './base.js';
-export * from './linear.js';
-export * from './github.js';
 export * from './beads.js';
+export * from './github.js';
+export * from './linear.js';
 
 export interface TriageConnectorsConfig {
     provider: 'github' | 'linear' | 'beads';
