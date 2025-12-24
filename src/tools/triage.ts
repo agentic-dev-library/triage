@@ -1,24 +1,27 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { getIssue, getPullRequest } from '../octokit.js';
+import { getTriageConnectors } from '../providers/index.js';
+import { getPullRequest } from '../octokit.js';
 
 export const triageTool = tool({
     description: 'Perform a triage analysis of an issue or pull request.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue or pull request to triage.'),
+    parameters: z.object({
+        id: z.union([z.number(), z.string()]).describe('The ID of the issue or pull request to triage.'),
         type: z.enum(['issue', 'pull-request']).describe('The type of item to triage.'),
     }),
     execute: async ({ id, type }) => {
         if (type === 'issue') {
-            const issue = await getIssue(id);
+            const connectors = getTriageConnectors();
+            const issue = await connectors.getIssue(String(id));
             return {
-                id: issue.number,
-                title: issue.title,
-                body: issue.body,
+                id: issue?.id,
+                title: issue?.title,
+                body: issue?.description || issue?.body,
                 type: 'issue',
             };
         }
-        const pr = await getPullRequest(id);
+        // PRs are still handled via GitHub MCP for now
+        const pr = await getPullRequest(Number(id));
         return {
             id: pr.number,
             title: pr.title,
