@@ -1,5 +1,5 @@
 {
-    "$schema": "https://biomejs.dev/schemas/2.3.9/schema.json",
+    "$schema": "https://biomejs.dev/schemas/2.3.10/schema.json",
     "vcs": {
         "enabled": true,
         "clientKind": "git",
@@ -22,7 +22,12 @@
         "rules": {
             "recommended": true,
             "complexity": {
-                "noExcessiveCognitiveComplexity": "warn"
+                "noExcessiveCognitiveComplexity": {
+                    "level": "warn",
+                    "options": {
+                        "maxAllowedComplexity": 60
+                    }
+                }
             },
             "style": {
                 "useConst": "error",

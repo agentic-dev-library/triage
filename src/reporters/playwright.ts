@@ -37,7 +37,6 @@ export interface StrataPlaywrightReporterOptions {
 class StrataPlaywrightReporter implements Reporter {
     private options: Required<StrataPlaywrightReporterOptions>;
     private testResults: Map<string, TestResult[]> = new Map();
-    private startTime: number = 0;
 
     constructor(options: StrataPlaywrightReporterOptions = {}) {
         this.options = {
