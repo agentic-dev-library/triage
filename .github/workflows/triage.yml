@@ -53,8 +53,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install agentic-triage
-        run: npm install -g agentic-triage@latest
+      - name: Install @agentic/triage
+        run: npm install -g @agentic/triage@latest
 
       - name: Assess issue
         run: |
@@ -80,8 +80,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install agentic-triage
-        run: npm install -g agentic-triage@latest
+      - name: Install @agentic/triage
+        run: npm install -g @agentic/triage@latest
 
       - name: Run sprint planning
         run: agentic-triage sprint
@@ -100,8 +100,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install agentic-triage
-        run: npm install -g agentic-triage@latest
+      - name: Install @agentic/triage
+        run: npm install -g @agentic/triage@latest
 
       - name: Generate roadmap
         run: agentic-triage roadmap
@@ -120,8 +120,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install agentic-triage
-        run: npm install -g agentic-triage@latest
+      - name: Install @agentic/triage
+        run: npm install -g @agentic/triage@latest
 
       - name: Run security scan
         run: agentic-triage security
@@ -140,8 +140,8 @@ jobs:
         with:
           node-version: '22'
 
-      - name: Install agentic-triage
-        run: npm install -g agentic-triage@latest
+      - name: Install @agentic/triage
+        run: npm install -g @agentic/triage@latest
 
       - name: Run cascade
         run: agentic-triage cascade
