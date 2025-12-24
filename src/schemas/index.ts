@@ -1,3 +1,3 @@
-export * from './issue';
-export * from './review';
-export * from './triage';
+export * from './issue.js';
+export * from './review.js';
+export * from './triage.js';

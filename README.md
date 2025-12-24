@@ -1,12 +1,12 @@
-# agentic-triage
+# @agentic/triage
 
-[![npm version](https://img.shields.io/npm/v/agentic-triage.svg)](https://www.npmjs.com/package/agentic-triage)
-[![Coverage Status](https://coveralls.io/repos/github/jbdevprimary/agentic-triage/badge.svg?branch=main)](https://coveralls.io/github/jbdevprimary/agentic-triage?branch=main)
+[![npm version](https://img.shields.io/npm/v/@agentic/triage.svg)](https://www.npmjs.com/package/@agentic/triage)
+[![Coverage Status](https://coveralls.io/repos/github/jbdevprimary/@agentic/triage/badge.svg?branch=main)](https://coveralls.io/github/jbdevprimary/@agentic/triage?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 > Portable triage primitives for AI agents - Vercel AI SDK tools, MCP server, and direct API
 
-**agentic-triage** provides reusable triage primitives for AI agent systems. It offers three integration patterns:
+**@agentic/triage** provides reusable triage primitives for AI agent systems. It offers three integration patterns:
 
 1. **Vercel AI SDK Tools** - Portable tools for any Vercel AI SDK application
 2. **MCP Server** - Model Context Protocol server for Claude Desktop, Cursor, etc.
@@ -16,10 +16,10 @@
 
 ```bash
 # npm
-npm install agentic-triage
+npm install @agentic/triage
 
 # pnpm
-pnpm add agentic-triage
+pnpm add @agentic/triage
 ```
 
 ## Quick Start
@@ -27,7 +27,7 @@ pnpm add agentic-triage
 ### 1. Vercel AI SDK Tools (Recommended for AI Agents)
 
 ```typescript
-import { getTriageTools } from 'agentic-triage';
+import { getTriageTools } from '@agentic/triage';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
@@ -41,7 +41,7 @@ const result = await generateText({
 #### Selective Tool Import
 
 ```typescript
-import { getIssueTools, getReviewTools, getProjectTools } from 'agentic-triage';
+import { getIssueTools, getReviewTools, getProjectTools } from '@agentic/triage';
 
 // Only import what your agent needs
 const myAgentTools = {
@@ -62,7 +62,7 @@ import {
   searchIssuesTool,
   addLabelsTool,
   removeLabelsTool,
-} from 'agentic-triage';
+} from '@agentic/triage';
 
 // Use individual tools
 const tools = { listIssues: listIssuesTool, createIssue: createIssueTool };
@@ -75,7 +75,7 @@ const tools = { listIssues: listIssuesTool, createIssue: createIssueTool };
   "mcpServers": {
     "triage": {
       "command": "npx",
-      "args": ["agentic-triage", "mcp-server"]
+      "args": ["@agentic/triage", "mcp-server"]
     }
   }
 }
@@ -84,7 +84,7 @@ const tools = { listIssues: listIssuesTool, createIssue: createIssueTool };
 ### 3. Direct TypeScript API
 
 ```typescript
-import { TriageConnectors } from 'agentic-triage';
+import { TriageConnectors } from '@agentic/triage';
 
 const triage = new TriageConnectors({ provider: 'github' });
 
@@ -125,7 +125,7 @@ The provider is auto-detected based on environment:
 ### Explicit Configuration
 
 ```typescript
-import { TriageConnectors } from 'agentic-triage';
+import { TriageConnectors } from '@agentic/triage';
 
 // GitHub
 const github = new TriageConnectors({
@@ -144,7 +144,7 @@ const beads = new TriageConnectors({
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      agentic-triage                         │
+│                      @agentic/triage                         │
 │                                                             │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────────┐ │
 │  │ GitHub      │  │ Beads       │  │ Jira/Linear         │ │
@@ -185,13 +185,13 @@ The CLI is primarily for development and testing the primitives:
 
 ```bash
 # Test issue assessment
-npx agentic-triage assess 123
+npx @agentic/triage assess 123
 
 # Test PR review
-npx agentic-triage review 144
+npx @agentic/triage review 144
 
 # Start MCP server
-npx agentic-triage mcp-server
+npx @agentic/triage mcp-server
 ```
 
 ## Environment Variables

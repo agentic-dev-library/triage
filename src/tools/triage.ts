@@ -1,18 +1,29 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { triageAnalysisSchema } from '../schemas';
+import { getIssue, getPullRequest } from '../octokit.js';
 
 export const triageTool = tool({
-  description: 'Perform a triage analysis of an issue or pull request.',
-  parameters: z.object({
-    id: z.number().describe('The ID of the issue or pull request to triage.'),
-    type: z.enum(['issue', 'pull-request']).describe('The type of item to triage.'),
-  }),
-  execute: async ({ id, type }) => {
-    // This is a placeholder.
-    console.log(`Triage analysis for ${type} ${id}`);
-    return {
-      triage: 'This is a sample triage analysis.',
-    };
-  },
-});
+    description: 'Perform a triage analysis of an issue or pull request.',
+    parameters: z.object({
+        id: z.number().describe('The ID of the issue or pull request to triage.'),
+        type: z.enum(['issue', 'pull-request']).describe('The type of item to triage.'),
+    }),
+    execute: async ({ id, type }: any) => {
+        if (type === 'issue') {
+            const issue = await getIssue(id);
+            return {
+                id: issue.number,
+                title: issue.title,
+                body: issue.body,
+                type: 'issue',
+            };
+        }
+        const pr = await getPullRequest(id);
+        return {
+            id: pr.number,
+            title: pr.title,
+            body: pr.body,
+            type: 'pull-request',
+        };
+    },
+} as any);

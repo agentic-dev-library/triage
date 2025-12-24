@@ -255,6 +255,24 @@ export async function createIssueComment(issueNumber: number, body: string): Pro
 }
 
 /**
+ * Create an issue via MCP
+ */
+export async function createIssue(issue: {
+    title: string;
+    body: string;
+    labels?: string[];
+    assignees?: string[];
+}): Promise<{ number: number }> {
+    const { owner, repo } = getRepoContext();
+    const result = (await callGitHubTool('create_issue', {
+        owner,
+        repo,
+        ...issue,
+    })) as { number: number };
+    return { number: result.number };
+}
+
+/**
  * Update an issue via MCP
  */
 export async function updateIssue(

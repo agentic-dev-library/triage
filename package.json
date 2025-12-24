@@ -64,20 +64,20 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/jbdevprimary/agentic-triage.git"
+        "url": "git+https://github.com/jbcom/nodejs-agentic-triage.git"
     },
-    "homepage": "https://github.com/jbdevprimary/agentic-triage#readme",
+    "homepage": "https://github.com/jbcom/nodejs-agentic-triage#readme",
     "bugs": {
-        "url": "https://github.com/jbdevprimary/agentic-triage/issues"
+        "url": "https://github.com/jbcom/nodejs-agentic-triage/issues"
     },
     "engines": {
         "node": ">=20"
     },
     "dependencies": {
-        "@ai-sdk/mcp": "^1.0.0-beta.33",
+        "@ai-sdk/mcp": "^1.0.1",
         "@playwright/mcp": "latest",
-        "ai": "^5.0.0",
-        "ai-sdk-ollama": "^2.0.1",
+        "ai": "^6.0.0",
+        "ai-sdk-ollama": "^3.0.0",
         "commander": "^14.0.2",
         "glob": "^13.0.0",
         "octokit": "^5.0.5",
