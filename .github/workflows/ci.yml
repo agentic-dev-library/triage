@@ -1,6 +1,6 @@
 # CI - Build, Lint, Test
 # Core quality gates - runs on every PR and push to main
-name: CI
+name: CI Primitives
 
 on:
   push:
