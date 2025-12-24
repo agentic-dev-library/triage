@@ -31,7 +31,7 @@ vi.mock('ai', async () => {
     };
 });
 
-vi.mock('ai-sdk-ollama', async () => {
+vi.mock('ollama-ai-provider', async () => {
     return {
         ollama: ollamaFn,
         createOllama: createOllamaFn,
