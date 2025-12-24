@@ -204,3 +204,4 @@ export {
 
 export * from './queue/index.js';
 export * from './scoring/index.js';
+export * from './mcp-server.js';
