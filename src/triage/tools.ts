@@ -1,43 +1,12 @@
 /**
  * Vercel AI SDK Tools for Triage Operations
- *
- * Following the vendor-connectors pattern, this module provides tools
- * that work with the Vercel AI SDK (used by agentic-control).
- *
- * Pattern mirrors vendor-connectors/meshy/tools.ts:
- * - Tool definitions with metadata
- * - Framework-specific getters (get_tools, get_langchain_tools, etc.)
- * - Auto-detection of available frameworks
- *
- * @example With Vercel AI SDK (agentic-control)
- * ```typescript
- * import { getTriageTools } from '@strata/triage';
- * import { generateText } from 'ai';
- * import { anthropic } from '@ai-sdk/anthropic';
- *
- * const tools = getTriageTools();
- *
- * const result = await generateText({
- *   model: anthropic('claude-sonnet-4-20250514'),
- *   tools,
- *   prompt: 'List all open bugs and create a summary',
- * });
- * ```
- *
- * @example Individual tool sets
- * ```typescript
- * import { getIssueTools, getProjectTools } from '@strata/triage';
- *
- * // Just issue tools
- * const issueTools = getIssueTools();
- *
- * // Combine specific tool sets
- * const tools = { ...getIssueTools(), ...getProjectTools() };
- * ```
  */
 
 import { tool } from 'ai';
 import { z } from 'zod';
+import * as handlers from '../handlers/issue.js';
+import * as reviewHandlers from '../handlers/review.js';
+import { CodeReviewSchema } from '../schemas/review.js';
 import { TriageConnectors } from './connectors.js';
 
 // =============================================================================
@@ -76,21 +45,13 @@ export const listIssuesTool = tool({
     inputSchema: z.object({
         status: z.enum(['open', 'in_progress', 'blocked', 'closed']).optional().describe('Filter by status'),
         priority: z.enum(['critical', 'high', 'medium', 'low', 'backlog']).optional().describe('Filter by priority'),
-        type: z.enum(['bug', 'feature', 'task', 'epic', 'chore']).optional().describe('Filter by type'),
+        type: z.enum(['bug', 'feature', 'task', 'epic', 'chore', 'docs']).optional().describe('Filter by type'),
         labels: z.array(z.string()).optional().describe('Filter by labels (AND logic)'),
         limit: z.number().optional().describe('Maximum number of results'),
         assignee: z.string().optional().describe('Filter by assignee'),
     }),
-    execute: async ({ status, priority, type, labels, limit, assignee }) => {
-        const connectors = getConnectors();
-        const issues = await connectors.issues.list({
-            status,
-            priority,
-            type,
-            labels,
-            limit,
-            assignee,
-        });
+    execute: async (args) => {
+        const issues = await handlers.handleListIssues(args);
         return {
             count: issues.length,
             issues: issues.map((i) => ({
@@ -116,8 +77,7 @@ export const getIssueTool = tool({
         id: z.string().describe('The issue ID'),
     }),
     execute: async ({ id }) => {
-        const connectors = getConnectors();
-        const issue = await connectors.issues.get(id);
+        const issue = await handlers.handleGetIssue(id);
         if (!issue) {
             return { found: false, message: `Issue ${id} not found` };
         }
@@ -148,7 +108,11 @@ export const createIssueTool = tool({
     inputSchema: z.object({
         title: z.string().describe('Issue title'),
         description: z.string().optional().describe('Issue description/body'),
-        type: z.enum(['bug', 'feature', 'task', 'epic', 'chore']).optional().default('task').describe('Issue type'),
+        type: z
+            .enum(['bug', 'feature', 'task', 'epic', 'chore', 'docs'])
+            .optional()
+            .default('task')
+            .describe('Issue type'),
         priority: z
             .enum(['critical', 'high', 'medium', 'low', 'backlog'])
             .optional()
@@ -162,7 +126,7 @@ export const createIssueTool = tool({
         const issue = await connectors.issues.create({
             title,
             description,
-            type,
+            type: type as any,
             priority,
             labels,
             assignee,
@@ -192,7 +156,7 @@ export const updateIssueTool = tool({
         description: z.string().optional().describe('New description'),
         status: z.enum(['open', 'in_progress', 'blocked', 'closed']).optional().describe('New status'),
         priority: z.enum(['critical', 'high', 'medium', 'low', 'backlog']).optional().describe('New priority'),
-        type: z.enum(['bug', 'feature', 'task', 'epic', 'chore']).optional().describe('New type'),
+        type: z.enum(['bug', 'feature', 'task', 'epic', 'chore', 'docs']).optional().describe('New type'),
         assignee: z.string().optional().describe('New assignee'),
     }),
     execute: async ({ id, title, description, status, priority, type, assignee }) => {
@@ -202,7 +166,7 @@ export const updateIssueTool = tool({
             description,
             status,
             priority,
-            type,
+            type: type as any,
             assignee,
         });
         return {
@@ -359,7 +323,7 @@ export const removeLabelsTool = tool({
 });
 
 // =============================================================================
-// Project Tools (Coming Soon)
+// Project Tools
 // =============================================================================
 
 /**
@@ -395,7 +359,7 @@ export const listSprintsTool = tool({
 });
 
 // =============================================================================
-// Review Tools (Coming Soon)
+// Review Tools
 // =============================================================================
 
 /**
@@ -415,6 +379,18 @@ export const getPRCommentsTool = tool({
             comments,
         };
     },
+});
+
+/**
+ * Tool: Submit structured code review
+ */
+export const submitReviewTool = tool({
+    description: 'Submit a structured code review for a pull request',
+    inputSchema: z.object({
+        prNumber: z.number().describe('The pull request number'),
+        review: CodeReviewSchema,
+    }),
+    execute: async ({ prNumber, review }) => reviewHandlers.handleSubmitReview(prNumber, review),
 });
 
 // =============================================================================
@@ -450,30 +426,18 @@ export const PROJECT_TOOL_DEFINITIONS = [
  */
 export const REVIEW_TOOL_DEFINITIONS = [
     { name: 'get_pr_comments', tool: getPRCommentsTool, description: 'Get PR review comments' },
+    { name: 'submit_review', tool: submitReviewTool, description: 'Submit structured code review' },
 ];
 
 // =============================================================================
-// Tool Getters (following vendor-connectors pattern)
+// Tool Getters
 // =============================================================================
 
-// Type for tool record - using 'any' to avoid complex generic inference issues
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type ToolRecord = Record<string, ReturnType<typeof tool<any, any>>>;
+// Type for tool record
+type ToolRecord = Record<string, any>;
 
 /**
  * Get all issue management tools for Vercel AI SDK
- *
- * @example
- * ```typescript
- * import { getIssueTools } from '@strata/triage';
- * import { generateText } from 'ai';
- *
- * const result = await generateText({
- *   model: anthropic('claude-sonnet-4-20250514'),
- *   tools: getIssueTools(),
- *   prompt: 'List all open bugs',
- * });
- * ```
  */
 export function getIssueTools(): ToolRecord {
     return Object.fromEntries(ISSUE_TOOL_DEFINITIONS.map((d) => [d.name, d.tool]));
@@ -495,22 +459,6 @@ export function getReviewTools(): ToolRecord {
 
 /**
  * Get ALL triage tools for Vercel AI SDK
- *
- * This is the main entry point - returns all tools for issues, projects, and reviews.
- * Similar to `get_tools()` in vendor-connectors.
- *
- * @example
- * ```typescript
- * import { getTriageTools } from '@strata/triage';
- * import { generateText } from 'ai';
- * import { anthropic } from '@ai-sdk/anthropic';
- *
- * const result = await generateText({
- *   model: anthropic('claude-sonnet-4-20250514'),
- *   tools: getTriageTools(),
- *   prompt: 'Create a bug for the login timeout issue and set it to high priority',
- * });
- * ```
  */
 export function getTriageTools(): ToolRecord {
     return {

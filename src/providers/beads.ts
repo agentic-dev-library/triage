@@ -447,6 +447,7 @@ export class BeadsProvider implements TriageProvider {
                     task: data.byType?.task || 0,
                     epic: data.byType?.epic || 0,
                     chore: data.byType?.chore || 0,
+                    docs: data.byType?.docs || 0,
                 },
             };
         } catch {
@@ -460,7 +461,7 @@ export class BeadsProvider implements TriageProvider {
                 blocked: 0,
                 closed: 0,
                 byPriority: { critical: 0, high: 0, medium: 0, low: 0, backlog: 0 },
-                byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0 },
+                byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0, docs: 0 },
             };
 
             for (const issue of all) {

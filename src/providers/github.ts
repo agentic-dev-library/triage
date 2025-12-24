@@ -336,6 +336,7 @@ export class GitHubProvider implements TriageProvider {
             task: 0,
             epic: 0,
             chore: 0,
+            docs: 0,
         };
 
         for (const issue of all) {

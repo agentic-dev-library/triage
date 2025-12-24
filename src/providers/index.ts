@@ -2,7 +2,7 @@
  * Triage Providers
  *
  * Multi-provider abstraction for issue tracking systems.
- * Similar to how agentic-control has multiple AI providers,
+ * Similar to how AI providers work,
  * agentic-triage has multiple triage/issue providers.
  *
  * Supported Providers:
@@ -279,7 +279,7 @@ export async function getCombinedStats(): Promise<{
         blocked: 0,
         closed: 0,
         byPriority: { critical: 0, high: 0, medium: 0, low: 0, backlog: 0 },
-        byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0 },
+        byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0, docs: 0 },
     };
 
     for (const [name, provider] of providerRegistry) {

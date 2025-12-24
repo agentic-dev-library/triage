@@ -60,24 +60,6 @@ async function runTriageAgent(prompt: string) {
 await runTriageAgent('Find all critical bugs and create a triage plan');
 ```
 
-### With agentic-control
-
-```typescript
-import { getTriageTools } from 'agentic-triage';
-import { AgentFleet } from 'agentic-control';
-
-const fleet = new AgentFleet({
-  agents: {
-    triage: {
-      tools: getTriageTools(),
-      systemPrompt: 'You are a triage specialist...',
-    },
-  },
-});
-
-await fleet.dispatch('triage', 'Review all open issues');
-```
-
 ### Selective Tool Import
 
 ```typescript
@@ -187,4 +169,3 @@ Tools return structured errors that agents can understand:
 ## Related
 
 - [README.md](./README.md) - Main documentation
-- [agentic-control](https://github.com/jbdevprimary/agentic-control) - Agent fleet orchestration

@@ -32,7 +32,7 @@ feat(scope)!: breaking change  → major bump (X.0.0)
 | `dic` | directed-inputs-class |
 | `bridge` | python-terraform-bridge |
 | `connectors` | vendor-connectors |
-| `agentic` | agentic-control |
+| `agentic` | @agentic/triage |
 | `vss` | vault-secret-sync |
 
 ## Release Process

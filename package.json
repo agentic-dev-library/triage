@@ -1,7 +1,7 @@
 {
-    "name": "agentic-triage",
-    "version": "0.2.1",
-    "description": "AI-powered GitHub issue triage, PR review, and sprint planning CLI - powered by agentic-control and agentic-crew",
+    "name": "@agentic/triage",
+    "version": "0.3.0",
+    "description": "AI-powered GitHub issue triage, PR review, and sprint planning - Vercel AI SDK primitives",
     "type": "module",
     "main": "./dist/index.js",
     "types": "./dist/index.d.ts",
@@ -13,6 +13,18 @@
         ".": {
             "types": "./dist/index.d.ts",
             "import": "./dist/index.js"
+        },
+        "./schemas": {
+            "types": "./dist/schemas/index.d.ts",
+            "import": "./dist/schemas/index.js"
+        },
+        "./tools": {
+            "types": "./dist/tools/index.d.ts",
+            "import": "./dist/tools/index.js"
+        },
+        "./handlers": {
+            "types": "./dist/handlers/index.d.ts",
+            "import": "./dist/handlers/index.js"
         },
         "./reporters/vitest": {
             "types": "./dist/reporters/vitest.d.ts",
@@ -76,7 +88,6 @@
     "dependencies": {
         "@ai-sdk/mcp": "^1.0.0-beta.33",
         "@playwright/mcp": "latest",
-        "agentic-control": "^1.1.0",
         "ai": "^5.0.0",
         "ai-sdk-ollama": "^2.0.1",
         "commander": "^14.0.2",

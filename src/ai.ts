@@ -1,17 +1,7 @@
 /**
- * AI Client using Vercel AI SDK with agentic-control configuration
- *
- * This package is intended to be configured via agentic-control's config system
- * (e.g. `agentic.config.json`) so that triage flows share a single, consistent
- * MCP + provider configuration.
- *
- * Defaults remain Ollama-friendly for local/dev use:
- * - OLLAMA_API_KEY: API key for Ollama Cloud (optional for local)
- * - OLLAMA_MODEL: Model to use (default: qwen3-coder:480b)
- * - OLLAMA_HOST: Host URL (default: http://localhost:11434/api for local)
+ * AI Client using Vercel AI SDK
  */
 
-import { getOrLoadProvider, resolveProviderOptions } from 'agentic-control/core';
 import { generateText, stepCountIs, tool } from 'ai';
 import { createOllama, ollama } from 'ai-sdk-ollama';
 import type { z } from 'zod';
@@ -22,13 +12,11 @@ import type { z } from 'zod';
 export type ToolSet = Record<string, any>;
 
 // Default model - qwen3-coder:480b on Ollama Cloud has excellent tool support
-// glm-4.6:cloud has issues with tool result synthesis (keeps calling tools without responding)
 export const DEFAULT_MODEL = 'qwen3-coder:480b';
 export const CLOUD_HOST = 'https://ollama.com/api';
 export const LOCAL_HOST = 'http://localhost:11434/api';
 
 export interface AIConfig {
-    /** AI provider name (agentic-control supported providers) */
     provider?: string;
     apiKey?: string;
     model?: string;
@@ -77,9 +65,6 @@ export function getModel(config: AIConfig = {}): string {
 
 /**
  * Resolve the Vercel AI SDK model instance to use.
- *
- * - Uses agentic-control config (`agentic.config.*`) when provider is not Ollama.
- * - Preserves the existing Ollama/local behavior when provider is omitted or "ollama".
  */
 export async function resolveModel(config: AIConfig = {}): Promise<{
     providerName: string;
@@ -96,17 +81,12 @@ export async function resolveModel(config: AIConfig = {}): Promise<{
         return { providerName, modelId, model: provider(modelId) };
     }
 
-    // Non-Ollama providers use agentic-control's provider loader (dynamic import + key resolution).
-    const resolved = resolveProviderOptions({
-        provider: providerName,
-        model: config.model,
-        apiKey: config.apiKey,
-    });
-    const factory = await getOrLoadProvider(resolved.providerName, resolved.apiKey);
-    return { providerName: resolved.providerName, modelId: resolved.model, model: factory(resolved.model) };
+    throw new Error(
+        `Provider ${providerName} is not supported directly. Please provide a pre-configured model instance.`
+    );
 }
 
-export interface GenerateOptions {
+export interface GenerateOptions extends AIConfig {
     systemPrompt?: string;
     maxTokens?: number;
     temperature?: number;
@@ -116,7 +96,7 @@ export interface GenerateOptions {
  * Generate text using the AI model (no tools)
  */
 export async function generate(prompt: string, options: GenerateOptions = {}): Promise<string> {
-    const resolved = await resolveModel();
+    const resolved = await resolveModel(options);
 
     const result = await generateText({
         model: resolved.model,
@@ -144,15 +124,13 @@ export interface GenerateWithToolsResult {
 
 /**
  * Generate text with tools - uses AI SDK's built-in multi-step support
- *
- * This properly integrates with the Vercel AI SDK's agentic loop via stopWhen
  */
 export async function generateWithTools(
     prompt: string,
     tools: ToolSet,
     options: GenerateWithToolsOptions = {}
 ): Promise<GenerateWithToolsResult> {
-    const resolved = await resolveModel();
+    const resolved = await resolveModel(options);
     const maxSteps = options.maxSteps ?? 10;
 
     const result = await generateText({

@@ -174,7 +174,6 @@ const beads = new TriageConnectors({
 
 ## Consumers
 
-- **[agentic-control](https://github.com/jbdevprimary/agentic-control)** - First customer, AI agent fleet orchestration
 - Any Vercel AI SDK application
 - Any MCP-compatible client (Claude Desktop, Cursor, etc.)
 - Direct TypeScript/JavaScript applications
@@ -229,7 +228,6 @@ pnpm run check
 
 ## Related Projects
 
-- [agentic-control](https://github.com/jbdevprimary/agentic-control) - AI agent fleet orchestration (first customer)
 - [Beads](https://github.com/steveyegge/beads) - Local-first, AI-native issue tracking
 - [Vercel AI SDK](https://sdk.vercel.ai) - AI SDK for TypeScript
 

@@ -3,7 +3,7 @@
  *
  * Following the vendor-connectors pattern, this module provides:
  * 1. Direct TypeScript API - TriageConnectors class
- * 2. Vercel AI SDK Tools - for use with agentic-control agents
+ * 2. Vercel AI SDK Tools - for use with AI agents
  *
  * @example Direct API
  * ```typescript

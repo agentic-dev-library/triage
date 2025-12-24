@@ -43,6 +43,14 @@
  */
 
 // ============================================================================
+// AI SDK Primitives (Schemas, Tools, Handlers)
+// ============================================================================
+
+export * as handlers from './handlers/index.js';
+export * as schemas from './schemas/index.js';
+export * as tools from './tools/index.js';
+
+// ============================================================================
 // AI Integration
 // ============================================================================
 
@@ -348,7 +356,7 @@ export {
 /**
  * Multi-provider abstraction for issue tracking systems
  *
- * Similar to how agentic-control has multiple AI providers (Anthropic, OpenAI, etc.),
+ * Similar to how AI providers work,
  * agentic-triage has multiple triage/issue providers:
  *
  * | Provider | Use Case |
@@ -429,7 +437,7 @@ export {
  *
  * Provides TWO interfaces (like vendor-connectors):
  * 1. **Direct TypeScript API** - TriageConnectors class
- * 2. **Vercel AI SDK Tools** - for use with agentic-control agents
+ * 2. **Vercel AI SDK Tools** - for use with AI agents
  *
  * @example Direct API (TriageConnectors)
  * ```typescript
@@ -446,7 +454,7 @@ export {
  * const ready = await triage.issues.getReadyWork({ limit: 5 });
  * ```
  *
- * @example Vercel AI SDK Tools (for agentic-control)
+ * @example Vercel AI SDK Tools
  * ```typescript
  * import { getTriageTools } from '@strata/triage';
  * import { generateText } from 'ai';
