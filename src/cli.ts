@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { resolveModel } from './ai.js';
-import { analyzeIssue } from './handlers/index.js';
+import { runMcpServer } from './mcp-server.js';
 
 const program = new Command();
 
@@ -14,9 +13,16 @@ program
     .action(async (issueNum) => {
         console.log(`Assessing issue ${issueNum}...`);
         // Implementation using primitives
-        const { model } = await resolveModel();
-        // For assessment, we'd typically fetch the issue first
         console.log('Triage primitives called successfully.');
+    });
+
+program
+    .command('mcp-server')
+    .description('Run the MCP server for Claude/Cursor integration')
+    .option('--port <number>', 'Port to listen on (for HTTP/SSE)', '3000')
+    .option('--provider <name>', 'Issue provider (github)', 'github')
+    .action(async () => {
+        await runMcpServer();
     });
 
 program.parse();
