@@ -36,7 +36,6 @@ import type {
     CreateIssueOptions,
     ListIssuesOptions,
     ProviderStats,
-    ReadyWork,
     TriageIssue,
     TriageProvider,
     UpdateIssueOptions,
