@@ -1,121 +1,74 @@
 import { tool } from 'ai';
 import { z } from 'zod';
-import { addIssueLabels, createIssue, getIssue, searchIssues, updateIssue } from '../octokit.js';
+import { getTriageConnectors } from '../providers/index.js';
 import { issueSchema } from '../schemas/issue.js';
 
 export const createIssueTool = tool({
-    description: 'Create a new issue in the issue tracker.',
-    inputSchema: issueSchema,
-    execute: async (issue) => {
-        const { number } = await createIssue({
+    description: 'Create a new issue.',
+    parameters: issueSchema,
+    execute: async (issue: any) => {
+        const connectors = getTriageConnectors();
+        const result = await connectors.createIssue({
             title: issue.title,
             body: issue.body,
-            labels: [...issue.labels, `type:${issue.type}`, `priority:${issue.priority}`],
+            type: issue.type,
+            priority: issue.priority,
+            labels: issue.labels,
         });
-        return { id: number, ...issue };
+        return result;
     },
 });
 
 export const getIssueTool = tool({
-    description: 'Get detailed issue by ID.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue to retrieve.'),
+    description: 'Get an issue by its ID.',
+    parameters: z.object({
+        id: z.union([z.number(), z.string()]).describe('The ID of the issue to retrieve.'),
     }),
-    execute: async ({ id }) => {
-        const issue = await getIssue(id);
-        return {
-            id: issue.number,
-            title: issue.title,
-            body: issue.body,
-            state: issue.state,
-            labels: issue.labels,
-        };
+    execute: async ({ id }: any) => {
+        const connectors = getTriageConnectors();
+        const issue = await connectors.getIssue(String(id));
+        return issue;
     },
 });
 
 export const updateIssueTool = tool({
-    description: 'Update issue fields.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue to update.'),
+    description: 'Update an existing issue.',
+    parameters: z.object({
+        id: z.union([z.number(), z.string()]).describe('The ID of the issue to update.'),
         updates: issueSchema.partial().describe('The fields to update.'),
     }),
-    execute: async ({ id, updates }) => {
-        const labels = updates.labels ? [...updates.labels] : undefined;
-        if (updates.type && labels) labels.push(`type:${updates.type}`);
-        if (updates.priority && labels) labels.push(`priority:${updates.priority}`);
-
-        await updateIssue(id, {
-            title: updates.title,
-            body: updates.body,
-            labels,
-        });
-        return { id, ...updates };
+    execute: async ({ id, updates }: any) => {
+        const connectors = getTriageConnectors();
+        const result = await connectors.updateIssue(String(id), updates);
+        return result;
     },
 });
 
 export const listIssuesTool = tool({
     description: 'List issues with filters (status, priority, type, labels).',
-    inputSchema: z.object({
-        status: z.enum(['open', 'closed']).optional().default('open'),
+    parameters: z.object({
+        status: z.enum(['open', 'in_progress', 'blocked', 'closed']).optional(),
+        priority: z.enum(['critical', 'high', 'medium', 'low', 'backlog']).optional(),
+        type: z.enum(['bug', 'feature', 'task', 'chore', 'docs']).optional(),
         labels: z.array(z.string()).optional(),
         limit: z.number().optional().default(50),
+        assignee: z.string().optional(),
     }),
-    execute: async ({ status, labels }) => {
-        let query = `is:${status}`;
-        if (labels && labels.length > 0) {
-            query += ` ${labels.map((l) => `label:"${l}"`).join(' ')}`;
-        }
-        const issues = await searchIssues(query);
+    execute: async (filters: any) => {
+        const connectors = getTriageConnectors();
+        const issues = await connectors.listIssues(filters);
         return { issues };
-    },
-});
-
-export const closeIssueTool = tool({
-    description: 'Close issue with reason.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue to close.'),
-        reason: z.string().optional().describe('Optional reason for closing.'),
-    }),
-    execute: async ({ id, reason }) => {
-        await updateIssue(id, { state: 'closed' });
-        return { id, state: 'closed', reason };
     },
 });
 
 export const searchIssuesTool = tool({
     description: 'Full-text search across issues.',
-    inputSchema: z.object({
+    parameters: z.object({
         query: z.string().describe('The search query.'),
     }),
-    execute: async ({ query }) => {
-        const issues = await searchIssues(query);
+    execute: async ({ query }: any) => {
+        const connectors = getTriageConnectors();
+        const issues = await connectors.searchIssues(query);
         return { issues };
-    },
-});
-
-export const addLabelsTool = tool({
-    description: 'Add labels to an issue.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue.'),
-        labels: z.array(z.string()).describe('The labels to add.'),
-    }),
-    execute: async ({ id, labels }) => {
-        await addIssueLabels(id, labels);
-        return { id, labelsAdded: labels };
-    },
-});
-
-export const removeLabelsTool = tool({
-    description: 'Remove labels from an issue.',
-    inputSchema: z.object({
-        id: z.number().describe('The ID of the issue.'),
-        labels: z.array(z.string()).describe('The labels to remove.'),
-    }),
-    execute: async ({ id, labels }) => {
-        // octokit.ts doesn't have a direct removeIssueLabels, but we can use updateIssue
-        const issue = await getIssue(id);
-        const remainingLabels = issue.labels.filter((l) => !labels.includes(l));
-        await updateIssue(id, { labels: remainingLabels });
-        return { id, labelsRemoved: labels };
     },
 });
