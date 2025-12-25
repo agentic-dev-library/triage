@@ -1,12 +1,6 @@
-<<<<<<< HEAD
-# agentic-triage Docker Image
+# @agentic/triage Docker Image
 # AI-powered GitHub issue triage, PR review, and sprint planning CLI
 # Includes triage primitives for issue/PR management
-=======
-# @agentic/triage Docker Image
-# Portable triage primitives for AI agents
-# Vercel AI SDK-compatible tools for issue triage, PR review, and project management.
->>>>>>> origin/main
 
 # =============================================================================
 # Stage 1: Build stage
@@ -59,20 +53,22 @@ RUN npm install -g pnpm
 # Create non-root user for security
 # Use UID 1001 to avoid conflicts with existing users in base image
 RUN useradd -m -u 1001 -s /bin/bash triage
+RUN mkdir -p /home/triage && chown triage:triage /home/triage
 USER triage
 WORKDIR /home/triage
 
-# Setup pnpm for global installs
-ENV SHELL=/bin/bash
-RUN pnpm setup
-ENV PNPM_HOME="/home/triage/.local/share/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
+# Copy built files and package info from builder
+COPY --from=builder --chown=triage:triage /build/dist ./dist
+COPY --from=builder --chown=triage:triage /build/package.json ./package.json
+COPY --from=builder --chown=triage:triage /build/pnpm-lock.yaml ./pnpm-lock.yaml
 
-# Install @agentic/triage globally from npm
-RUN pnpm add -g @agentic/triage@latest
+# Install production dependencies only
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
-# Verify installation
-RUN triage --help
+# Setup path for triage command
+ENV PATH="/home/triage/node_modules/.bin:$PATH"
+# Link the local package so it's available as 'triage'
+RUN pnpm link .
 
 # Default working directory
 WORKDIR /workspace
