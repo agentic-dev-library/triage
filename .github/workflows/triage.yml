@@ -60,7 +60,7 @@ jobs:
         run: |
           ISSUE_NUM="${{ github.event.issue.number || github.event.inputs.issue }}"
           if [ -n "$ISSUE_NUM" ]; then
-            triage assess "$ISSUE_NUM"
+            agentic-triage assess "$ISSUE_NUM"
           else
             echo "No issue number provided"
             exit 1
@@ -84,7 +84,7 @@ jobs:
         run: npm install -g @agentic/triage@latest
 
       - name: Run sprint planning
-        run: triage sprint
+        run: agentic-triage sprint
 
   # ============================================
   # ROADMAP
@@ -104,7 +104,7 @@ jobs:
         run: npm install -g @agentic/triage@latest
 
       - name: Generate roadmap
-        run: triage roadmap
+        run: agentic-triage roadmap
 
   # ============================================
   # SECURITY
@@ -124,7 +124,7 @@ jobs:
         run: npm install -g @agentic/triage@latest
 
       - name: Run security scan
-        run: triage security
+        run: agentic-triage security
 
   # ============================================
   # CASCADE
@@ -144,4 +144,4 @@ jobs:
         run: npm install -g @agentic/triage@latest
 
       - name: Run cascade
-        run: triage cascade
+        run: agentic-triage cascade
