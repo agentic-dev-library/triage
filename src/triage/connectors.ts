@@ -2,17 +2,11 @@
  * TriageConnectors - Unified API for Issue/Project/Review Management
  */
 
-import {
-    createBestProvider,
-    createProvider,
-    type JiraProviderConfig,
-    type ProviderConfig,
-} from '../providers/index.js';
+import { createBestProvider, createProvider } from '../providers/index.js';
 import type {
     CreateIssueOptions,
     ListIssuesOptions,
     ProviderStats,
-    ReadyWork,
     TriageIssue,
     TriageProvider,
     UpdateIssueOptions,
@@ -72,11 +66,13 @@ export class TriageConnectors {
         if (this._provider) return this._provider;
         if (this._initPromise) {
             await this._initPromise;
-            return this._provider!;
+            if (!this._provider) throw new Error('Provider failed to initialize');
+            return this._provider;
         }
         this._initPromise = this.initializeProvider();
         await this._initPromise;
-        return this._provider!;
+        if (!this._provider) throw new Error('Provider failed to initialize');
+        return this._provider;
     }
 
     private async initializeProvider(): Promise<void> {

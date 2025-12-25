@@ -11,7 +11,7 @@ export * from './types.js';
 import { BeadsProvider } from './beads.js';
 import { GitHubProvider } from './github.js';
 import { JiraProvider } from './jira.js';
-import { type LinearConfig, LinearProvider } from './linear.js';
+import { LinearProvider } from './linear.js';
 import type { ProviderConfig, TriageProvider } from './types.js';
 
 /**
