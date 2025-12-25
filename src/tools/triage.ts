@@ -4,7 +4,7 @@ import { getIssue, getPullRequest } from '../octokit.js';
 
 export const triageTool = tool({
     description: 'Perform a triage analysis of an issue or pull request.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue or pull request to triage.'),
         type: z.enum(['issue', 'pull-request']).describe('The type of item to triage.'),
     }),

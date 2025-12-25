@@ -5,7 +5,7 @@ import { codeReviewSchema } from '../schemas/review.js';
 
 export const submitCodeReviewTool = tool({
     description: 'Submit a code review for a pull request.',
-    parameters: z.object({
+    inputSchema: z.object({
         pullRequestId: z.number().describe('The ID of the pull request.'),
         review: codeReviewSchema.describe('The code review to submit.'),
     }),
@@ -17,7 +17,7 @@ export const submitCodeReviewTool = tool({
 
 export const getPRCommentsTool = tool({
     description: 'Get comments on a PR.',
-    parameters: z.object({
+    inputSchema: z.object({
         prNumber: z.number().describe('The pull request number.'),
     }),
     execute: async ({ prNumber }) => {

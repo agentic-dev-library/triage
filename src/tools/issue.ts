@@ -5,7 +5,7 @@ import { issueSchema } from '../schemas/issue.js';
 
 export const createIssueTool = tool({
     description: 'Create a new issue in the issue tracker.',
-    parameters: issueSchema,
+    inputSchema: issueSchema,
     execute: async (issue) => {
         const { number } = await createIssue({
             title: issue.title,
@@ -18,7 +18,7 @@ export const createIssueTool = tool({
 
 export const getIssueTool = tool({
     description: 'Get detailed issue by ID.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue to retrieve.'),
     }),
     execute: async ({ id }) => {
@@ -35,7 +35,7 @@ export const getIssueTool = tool({
 
 export const updateIssueTool = tool({
     description: 'Update issue fields.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue to update.'),
         updates: issueSchema.partial().describe('The fields to update.'),
     }),
@@ -55,7 +55,7 @@ export const updateIssueTool = tool({
 
 export const listIssuesTool = tool({
     description: 'List issues with filters (status, priority, type, labels).',
-    parameters: z.object({
+    inputSchema: z.object({
         status: z.enum(['open', 'closed']).optional().default('open'),
         labels: z.array(z.string()).optional(),
         limit: z.number().optional().default(50),
@@ -72,7 +72,7 @@ export const listIssuesTool = tool({
 
 export const closeIssueTool = tool({
     description: 'Close issue with reason.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue to close.'),
         reason: z.string().optional().describe('Optional reason for closing.'),
     }),
@@ -84,7 +84,7 @@ export const closeIssueTool = tool({
 
 export const searchIssuesTool = tool({
     description: 'Full-text search across issues.',
-    parameters: z.object({
+    inputSchema: z.object({
         query: z.string().describe('The search query.'),
     }),
     execute: async ({ query }) => {
@@ -95,7 +95,7 @@ export const searchIssuesTool = tool({
 
 export const addLabelsTool = tool({
     description: 'Add labels to an issue.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue.'),
         labels: z.array(z.string()).describe('The labels to add.'),
     }),
@@ -107,7 +107,7 @@ export const addLabelsTool = tool({
 
 export const removeLabelsTool = tool({
     description: 'Remove labels from an issue.',
-    parameters: z.object({
+    inputSchema: z.object({
         id: z.number().describe('The ID of the issue.'),
         labels: z.array(z.string()).describe('The labels to remove.'),
     }),
