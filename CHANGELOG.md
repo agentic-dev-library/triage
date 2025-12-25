@@ -17,18 +17,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Agent autonomy policy and operational guidelines
 - Memory bank for ecosystem session documentation
 - Complete API documentation generation via TypeDoc
+- Semantic-release automation with conventional commits
+- Full release automation via semantic-release (Node.js)
 
 ### Changed
 - **BREAKING**: Migrated documentation from Sphinx (Python) to TypeDoc (TypeScript)
+- **BREAKING**: Switched from python-semantic-release to semantic-release (Node.js)
 - Updated GitHub Actions workflows for TypeDoc deployment
 - Fixed Docker workflow attestation step
-- Fixed CI workflow release action
+- Fixed CI workflow to use proper semantic-release
 - Improved TypeDoc configuration with comprehensive settings
 - Updated GitHub repository links to agentic-dev-library organization
+- Automated versioning, changelog generation, and npm publishing
 
 ### Removed
 - Old Sphinx documentation files (conf.py, index.rst, etc.)
 - Python documentation dependencies
+- Manual version management and release workflows
+- python-semantic-release dependency
 
 ### Fixed
 - Documentation deployment workflow now uses correct tooling (TypeDoc)
