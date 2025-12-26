@@ -78,11 +78,11 @@
     "license": "MIT",
     "repository": {
         "type": "git",
-        "url": "git+https://github.com/jbcom/nodejs-agentic-triage.git"
+        "url": "git+https://github.com/agentic-dev-library/triage.git"
     },
-    "homepage": "https://github.com/jbcom/nodejs-agentic-triage#readme",
+    "homepage": "https://github.com/agentic-dev-library/triage#readme",
     "bugs": {
-        "url": "https://github.com/jbcom/nodejs-agentic-triage/issues"
+        "url": "https://github.com/agentic-dev-library/triage/issues"
     },
     "engines": {
         "node": ">=20"
