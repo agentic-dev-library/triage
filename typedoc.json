@@ -6,6 +6,7 @@
     "tsconfig": "./tsconfig.json",
     "out": "./docs/_build/api",
     "theme": "default",
+    "customCss": "./docs/jbcom-typedoc.css",
     "readme": "./README.md",
     "excludeNotDocumented": false,
     "excludePrivate": true,
@@ -21,7 +22,7 @@
     "sort": ["source-order"],
     "groupOrder": ["Classes", "Interfaces", "Type Aliases", "Functions", "Variables"],
     "navigationLinks": {
-        "GitHub": "https://github.com/jbcom/nodejs-agentic-triage"
+        "GitHub": "https://github.com/agentic-dev-library/triage"
     },
     "includeVersion": true
 }
