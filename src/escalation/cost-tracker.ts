@@ -162,7 +162,8 @@ export class CostTracker {
 	 */
 	getTotalCost(): number {
 		let total = 0;
-		for (const entries of this.entries.values()) {
+		const values = Array.from(this.entries.values());
+		for (const entries of values) {
 			total += entries.reduce((sum, e) => sum + e.amount, 0);
 		}
 		return total;
@@ -176,7 +177,8 @@ export class CostTracker {
 		cutoff.setDate(cutoff.getDate() - keepDays);
 		const cutoffStr = cutoff.toISOString().split('T')[0];
 
-		for (const [date] of this.entries) {
+		const dates = Array.from(this.entries.keys());
+		for (const date of dates) {
 			if (date < cutoffStr) {
 				this.entries.delete(date);
 			}
@@ -188,8 +190,9 @@ export class CostTracker {
 	 */
 	export(): Record<string, CostEntry[]> {
 		const exported: Record<string, CostEntry[]> = {};
-		for (const [date, entries] of this.entries) {
-			exported[date] = [...entries];
+		const entries = Array.from(this.entries.entries());
+		for (const [date, entriesArray] of entries) {
+			exported[date] = [...entriesArray];
 		}
 		return exported;
 	}
