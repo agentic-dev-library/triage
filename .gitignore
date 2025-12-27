@@ -44,3 +44,15 @@ test-results/
 # Core dumps / accidental dumps
 core
 docs/_build/
+
+# Cloned repos (not tracked)
+agentic-crew/
+agentic-game-generator/
+strata-capacitor/
+strata-core/
+strata-examples/
+strata-presets/
+strata-react-native/
+strata-shaders/
+strata-typescript-tutor/
+
