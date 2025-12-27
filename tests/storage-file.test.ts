@@ -1,8 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { FileStorage } from '../src/storage/file.js';
-import type { QueueItem } from '../src/queue/types.js';
-import { unlink } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
+import { unlink } from 'node:fs/promises';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import type { QueueItem } from '../src/queue/types.js';
+import { FileStorage } from '../src/storage/file.js';
 
 describe('FileStorage', () => {
     const testFile = '/tmp/queue-test.json';

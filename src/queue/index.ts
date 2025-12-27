@@ -11,8 +11,8 @@
  * - Lock: Lock management utilities
  */
 
+export * from './lock.js';
 export * from './manager.js';
+export * from './priority.js';
 export * from './storage.js';
 export * from './types.js';
-export * from './priority.js';
-export * from './lock.js';

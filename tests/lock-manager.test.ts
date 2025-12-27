@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { LockManager } from '../src/queue/lock.js';
-import { MemoryStorage } from '../src/storage/memory.js';
 import type { QueueItem } from '../src/queue/types.js';
+import { MemoryStorage } from '../src/storage/memory.js';
 
 describe('LockManager', () => {
     let storage: MemoryStorage<QueueItem>;

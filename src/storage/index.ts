@@ -10,7 +10,7 @@
  * - GitHub: GitHub Issue storage (production)
  */
 
-export * from './interface.js';
-export * from './memory.js';
 export * from './file.js';
 export * from './github-issue.js';
+export * from './interface.js';
+export * from './memory.js';

@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { GitHubIssueStorage, type GitHubIssueStorageOctokit } from '../src/storage/github-issue.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { QueueItem } from '../src/queue/types.js';
+import { GitHubIssueStorage, type GitHubIssueStorageOctokit } from '../src/storage/github-issue.js';
 
 describe('GitHubIssueStorage', () => {
     let mockOctokit: GitHubIssueStorageOctokit;

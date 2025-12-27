@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { MemoryStorage } from '../src/storage/memory.js';
+import { beforeEach, describe, expect, it } from 'vitest';
 import type { QueueItem, QueueState } from '../src/queue/types.js';
+import { MemoryStorage } from '../src/storage/memory.js';
 
 describe('MemoryStorage', () => {
     let storage: MemoryStorage<QueueItem>;

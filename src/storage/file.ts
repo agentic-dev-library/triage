@@ -5,7 +5,7 @@
  * Useful for local testing and single-machine deployments.
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { QueueItem, QueueLock, QueueState } from '../queue/types.js';
 import type { QueueStorage } from './interface.js';
