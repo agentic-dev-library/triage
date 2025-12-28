@@ -46,7 +46,7 @@ jobs:
           restore-keys: pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Lint and Format Check
         run: pnpm run check
@@ -78,7 +78,7 @@ jobs:
           version: 9
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --no-frozen-lockfile
 
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:

@@ -36,8 +36,9 @@
         }
     },
     "scripts": {
-        "build": "tsc",
-        "dev": "tsc --watch",
+        "build": "tsup",
+        "build:types": "tsc --emitDeclarationOnly",
+        "dev": "tsup --watch",
         "clean": "rimraf dist",
         "typecheck": "tsc --noEmit",
         "test": "vitest run",
@@ -123,6 +124,7 @@
         "semantic-release": "^25.0.2",
         "tsx": "^4.21.0",
         "typedoc": "^0.28.15",
+        "tsup": "^8.5.0",
         "typescript": "^5.9.3",
         "vitest": "^3.2.4"
     },
