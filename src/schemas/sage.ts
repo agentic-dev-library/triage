@@ -20,9 +20,16 @@ export type SageQueryType = z.infer<typeof SageQueryTypeSchema>;
 /**
  * Agent types for task routing
  */
-export const AgentTypeSchema = z.enum(['cursor', 'jules', 'ollama', 'human']);
+export const AgentTypeSchema = z.enum(['cursor', 'jules', 'ollama', 'claude', 'human']);
 
 export type AgentType = z.infer<typeof AgentTypeSchema>;
+
+/**
+ * Common effort levels for tasks and suggestions
+ */
+export const EffortSchema = z.enum(['trivial', 'small', 'medium', 'large', 'epic']);
+
+export type Effort = z.infer<typeof EffortSchema>;
 
 /**
  * Schema for Sage Q&A responses
@@ -54,7 +61,7 @@ export const SubtaskSchema = z.object({
     description: z.string().describe('Detailed description of what needs to be done'),
     agent: AgentTypeSchema.describe('Which agent should handle this subtask'),
     priority: z.number().min(1).max(10).describe('Priority from 1 (highest) to 10 (lowest)'),
-    effort: z.enum(['small', 'medium', 'large']).describe('Estimated effort level'),
+    effort: EffortSchema.describe('Estimated effort level'),
     dependencies: z.array(z.string()).optional().describe('IDs of subtasks this depends on'),
 });
 
@@ -64,9 +71,7 @@ export const TaskDecompositionSchema = z.object({
     originalTask: z.string().describe('The original task that was decomposed'),
     subtasks: z.array(SubtaskSchema).describe('List of subtasks to complete'),
     executionOrder: z.array(z.string()).optional().describe('Recommended order to execute subtasks by ID'),
-    estimatedTotalEffort: z
-        .enum(['small', 'medium', 'large', 'epic'])
-        .describe('Total estimated effort for all subtasks'),
+    estimatedTotalEffort: EffortSchema.describe('Total estimated effort for all subtasks'),
     notes: z.string().optional().describe('Additional notes or considerations'),
 });
 
@@ -103,7 +108,7 @@ export const UnblockResponseSchema = z.object({
         .array(
             z.object({
                 action: z.string().describe('Specific action to take'),
-                effort: z.enum(['trivial', 'small', 'medium', 'large']),
+                effort: EffortSchema,
                 likelihood: z.number().min(0).max(1).describe('Likelihood this will unblock'),
             })
         )

@@ -35,7 +35,7 @@ describe('Sage Schemas', () => {
 
     describe('AgentTypeSchema', () => {
         it('accepts valid agent types', () => {
-            const validAgents = ['cursor', 'jules', 'ollama', 'human'];
+            const validAgents = ['cursor', 'jules', 'ollama', 'claude', 'human'];
             for (const agent of validAgents) {
                 expect(AgentTypeSchema.parse(agent)).toBe(agent);
             }

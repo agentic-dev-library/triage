@@ -7,6 +7,7 @@ import {
     classifyQuery,
     decomposeTask,
     routeToAgent,
+    sage,
     type SageResponse,
     type TaskDecomposition,
     type UnblockResponse,
@@ -94,9 +95,7 @@ program
             console.log('Analyzing blocker...');
             result = await unblock(query, model);
         } else {
-            const queryType = classifyQuery(query);
-            console.log(`Query type: ${queryType}`);
-            result = await answerQuestion(query, model);
+            result = await sage(query, model);
         }
 
         printSageResult(result, options.json);
