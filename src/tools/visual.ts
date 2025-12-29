@@ -1,7 +1,6 @@
-import { z } from 'zod';
-import { resolveModel } from '../ai.js';
-import { createTool } from '../ai.js';
 import { chromium } from '@playwright/test';
+import { z } from 'zod';
+import { createTool, resolveModel } from '../ai.js';
 
 export const visualReviewTool = createTool({
     description: 'Perform a visual review of a web page using Playwright and AI analysis.',
@@ -40,7 +39,7 @@ export const visualReviewTool = createTool({
             // Here we would call the model with the image
             // Since the Vercel AI SDK handles images in generateText, we can use that
             // For now, return success with the screenshot metadata
-            
+
             return {
                 url,
                 status: 'success',

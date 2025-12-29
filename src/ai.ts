@@ -2,9 +2,9 @@
  * AI Client using Vercel AI SDK
  */
 
-import { generateText, stepCountIs, tool } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { google } from '@ai-sdk/google';
+import { generateText, stepCountIs, tool } from 'ai';
 import { createOllama, ollama } from 'ai-sdk-ollama';
 import type { z } from 'zod';
 
