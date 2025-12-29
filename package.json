@@ -93,6 +93,8 @@
     },
     "dependencies": {
         "@actions/core": "^2.0.1",
+        "@ai-sdk/anthropic": "^3.0.1",
+        "@ai-sdk/google": "^3.0.1",
         "@ai-sdk/mcp": "^1.0.1",
         "@linear/sdk": "^68.1.0",
         "@modelcontextprotocol/sdk": "^1.25.1",
@@ -121,9 +123,9 @@
         "lint-staged": "^16.2.7",
         "rimraf": "^6.1.2",
         "semantic-release": "^25.0.2",
+        "tsup": "^8.5.0",
         "tsx": "^4.21.0",
         "typedoc": "^0.28.15",
-        "tsup": "^8.5.0",
         "typescript": "^5.9.3",
         "vitest": "^3.2.4"
     },
