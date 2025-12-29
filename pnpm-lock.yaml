@@ -28,13 +28,13 @@ importers:
         version: 1.25.1(hono@4.11.3)(zod@4.2.1)
       '@playwright/mcp':
         specifier: latest
-        version: 0.0.53
+        version: 0.0.54
       ai:
         specifier: ^6.0.0
         version: 6.0.3(zod@4.2.1)
       ai-sdk-ollama:
         specifier: ^3.0.0
-        version: 3.0.0(ai@6.0.3(zod@4.2.1))(zod@4.2.1)
+        version: 3.0.1(ai@6.0.3(zod@4.2.1))(zod@4.2.1)
       commander:
         specifier: ^14.0.2
         version: 14.0.2
@@ -578,8 +578,8 @@ packages:
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
     engines: {node: '>=14'}
 
-  '@playwright/mcp@0.0.53':
-    resolution: {integrity: sha512-3nLsKMEAsQRV7FBoxvhEVOyKxVHt2E/S5Xe4zK5Z/nkqlqd/gFCtu79NlOTrODRNkjtMP8WKenOB31JigEBxoA==}
+  '@playwright/mcp@0.0.54':
+    resolution: {integrity: sha512-5hhRPZp/r/2j120W4fqC8se5/Y9Y40jf8e+Vp2VX69IoIbq06cN0LRK7cdcNrjdMHDyDSL8pTWf7QfWexvTsOQ==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -870,11 +870,11 @@ packages:
     resolution: {integrity: sha512-gOsf2YwSlleG6IjRYG2A7k0HmBMEo6qVNk9Bp/EaLgAJT5ngH6PXbqa4ItvnEwCm/velL5jAnQgsHsWnjhGmvw==}
     engines: {node: '>=18'}
 
-  ai-sdk-ollama@3.0.0:
-    resolution: {integrity: sha512-ik0BkfaB0jxR62s+kx64UTmZVVP/qsy/tCU2K5L341rF4L0f9ofE/lA34q0DIX4c293wvIMsQFRuuZy86CAwjQ==}
+  ai-sdk-ollama@3.0.1:
+    resolution: {integrity: sha512-mQIzn10Ex8XbEQ8DmWUC6Z/iKf8dCmfc8bYQdudZXsksQowGDbB5pidTUKLoDtfHTjO7FsOX2FovrCnLxkieow==}
     engines: {node: '>=22'}
     peerDependencies:
-      ai: ^6.0.0
+      ai: ^6.0.3
 
   ai@6.0.3:
     resolution: {integrity: sha512-OOo+/C+sEyscoLnbY3w42vjQDICioVNyS+F+ogwq6O5RJL/vgWGuiLzFwuP7oHTeni/MkmX8tIge48GTdaV7QQ==}
@@ -2145,8 +2145,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright-core@1.58.0-alpha-1766189059000:
-    resolution: {integrity: sha512-TzOav4UONfbqB0U1I75RrcvOGdJ1icVam2/lje1Lok/D9lX9iJjBLGB4FqNgFqaIgeOqI1hpHY8nMfA82JqJtg==}
+  playwright-core@1.58.0-alpha-2025-12-29:
+    resolution: {integrity: sha512-nxeyVkzX5EXxOaQFTvS4N6fSzsod06A5CMLOBjsCMUGZkmJF6HO4OXkoSTw6ONsgAzIwqas5DdTDO6QXZbFm1A==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2155,8 +2155,8 @@ packages:
     engines: {node: '>=18'}
     hasBin: true
 
-  playwright@1.58.0-alpha-1766189059000:
-    resolution: {integrity: sha512-h6yaIbcmyla/fh9jvvRBgVRMgwSmloKnCR4NDnVV18vqi1i5F4xqe3tGtgwHmkah9CJdQhhbZlTBIkY73q6+Xw==}
+  playwright@1.58.0-alpha-2025-12-29:
+    resolution: {integrity: sha512-syUV2eOFrAxG7LKAxI0KeLrwakifVD8Q/a+9uQZqEX7GxPhySHMnZ9wwq1YFco6tztDfWz9//vcCgN/e0wBb7A==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -3257,10 +3257,10 @@ snapshots:
   '@pkgjs/parseargs@0.11.0':
     optional: true
 
-  '@playwright/mcp@0.0.53':
+  '@playwright/mcp@0.0.54':
     dependencies:
-      playwright: 1.58.0-alpha-1766189059000
-      playwright-core: 1.58.0-alpha-1766189059000
+      playwright: 1.58.0-alpha-2025-12-29
+      playwright-core: 1.58.0-alpha-2025-12-29
 
   '@playwright/test@1.57.0':
     dependencies:
@@ -3575,7 +3575,7 @@ snapshots:
       clean-stack: 5.3.0
       indent-string: 5.0.0
 
-  ai-sdk-ollama@3.0.0(ai@6.0.3(zod@4.2.1))(zod@4.2.1):
+  ai-sdk-ollama@3.0.1(ai@6.0.3(zod@4.2.1))(zod@4.2.1):
     dependencies:
       '@ai-sdk/provider': 3.0.0
       '@ai-sdk/provider-utils': 4.0.1(zod@4.2.1)
@@ -4756,7 +4756,7 @@ snapshots:
 
   playwright-core@1.57.0: {}
 
-  playwright-core@1.58.0-alpha-1766189059000: {}
+  playwright-core@1.58.0-alpha-2025-12-29: {}
 
   playwright@1.57.0:
     dependencies:
@@ -4764,9 +4764,9 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
 
-  playwright@1.58.0-alpha-1766189059000:
+  playwright@1.58.0-alpha-2025-12-29:
     dependencies:
-      playwright-core: 1.58.0-alpha-1766189059000
+      playwright-core: 1.58.0-alpha-2025-12-29
     optionalDependencies:
       fsevents: 2.3.2
 
