@@ -1,7 +1,6 @@
 import { z } from 'zod';
-import { resolveModel } from '../ai.js';
+import { createTool, resolveModel } from '../ai.js';
 import { sage } from '../handlers/sage.js';
-import { createTool } from '../ai.js';
 
 export const sageTool = createTool({
     description: 'Ask Sage for technical advice, task decomposition, or agent routing based on repository context.',
