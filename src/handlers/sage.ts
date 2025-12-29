@@ -49,7 +49,8 @@ export function classifyQuery(query: string): SageQueryType {
  * Build the system prompt for Sage
  */
 function buildSystemPrompt(context?: SageContext): string {
-    let prompt = `You are the Ecosystem Sage - an intelligent advisor for software development.
+    const sections = [
+        `You are the Ecosystem Sage - an intelligent advisor for software development.
 
 Your role:
 1. Answer technical questions accurately and concisely
@@ -71,28 +72,30 @@ Guidelines:
 - Never hallucinate - if unsure, say so
 - Provide confidence levels honestly
 - Format responses in Markdown
-- Align with jbcom/control-center ecosystem workflows`;
+- Align with jbcom/control-center ecosystem workflows`,
+    ];
 
     if (context?.repoStructure) {
-        prompt += `\n\nRepository Structure:\n${context.repoStructure}`;
+        sections.push(`Repository Structure:\n${context.repoStructure}`);
     }
 
-    if (context?.keyFiles) {
-        prompt += '\n\nKey Files:';
+    if (context?.keyFiles && Object.keys(context.keyFiles).length > 0) {
+        let keyFilesText = 'Key Files:';
         for (const [file, content] of Object.entries(context.keyFiles)) {
-            prompt += `\n\n=== ${file} ===\n${content.slice(0, 2000)}`;
+            keyFilesText += `\n\n=== ${file} ===\n${content.slice(0, 2000)}`;
         }
+        sections.push(keyFilesText);
     }
 
     if (context?.issueContext) {
-        prompt += `\n\nIssue/PR Context:\n${context.issueContext}`;
+        sections.push(`Issue/PR Context:\n${context.issueContext}`);
     }
 
     if (context?.currentContext) {
-        prompt += `\n\nCurrent Context:\n${context.currentContext}`;
+        sections.push(`Current Context:\n${context.currentContext}`);
     }
 
-    return prompt;
+    return sections.join('\n\n');
 }
 
 /**
@@ -108,9 +111,7 @@ export async function answerQuestion(
     model: LanguageModel,
     context?: SageContext
 ): Promise<SageResponse> {
-    if (!query?.trim()) {
-        throw new Error('Query is required');
-    }
+    validateInput(query, 'Query');
 
     const queryType = classifyQuery(query);
 
@@ -143,9 +144,7 @@ export async function decomposeTask(
     model: LanguageModel,
     context?: SageContext
 ): Promise<TaskDecomposition> {
-    if (!task?.trim()) {
-        throw new Error('Task is required');
-    }
+    validateInput(task, 'Task');
 
     const result = await generateObject({
         model,
@@ -180,9 +179,7 @@ Order subtasks logically for execution.`,
  * @returns Agent routing decision
  */
 export async function routeToAgent(task: string, model: LanguageModel, context?: SageContext): Promise<AgentRouting> {
-    if (!task?.trim()) {
-        throw new Error('Task is required');
-    }
+    validateInput(task, 'Task');
 
     const result = await generateObject({
         model,
@@ -219,9 +216,7 @@ export async function unblock(
     model: LanguageModel,
     context?: SageContext
 ): Promise<UnblockResponse> {
-    if (!situation?.trim()) {
-        throw new Error('Situation description is required');
-    }
+    validateInput(situation, 'Situation description');
 
     const result = await generateObject({
         model,
@@ -256,6 +251,10 @@ export async function sage(
     model: LanguageModel,
     context?: SageContext
 ): Promise<SageResponse | TaskDecomposition | AgentRouting | UnblockResponse> {
+    if (!query?.trim()) {
+        throw new Error('Query is required');
+    }
+
     const queryType = classifyQuery(query);
 
     switch (queryType) {
@@ -267,5 +266,14 @@ export async function sage(
             return unblock(query, model, context);
         default:
             return answerQuestion(query, model, context);
+    }
+}
+
+/**
+ * Shared logic for input validation
+ */
+function validateInput(input: string, name: string): void {
+    if (!input?.trim()) {
+        throw new Error(`${name} is required`);
     }
 }

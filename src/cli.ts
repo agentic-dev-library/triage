@@ -80,25 +80,30 @@ program
     .option('--unblock', 'Get help unblocking')
     .option('--json', 'Output as JSON')
     .action(async (query, options) => {
-        const resolved = await resolveModel();
-        const model = resolved.model;
+        try {
+            const resolved = await resolveModel();
+            const model = resolved.model;
 
-        let result: SageResponse | TaskDecomposition | AgentRouting | UnblockResponse;
+            let result: SageResponse | TaskDecomposition | AgentRouting | UnblockResponse;
 
-        if (options.decompose) {
-            console.log('Decomposing task...');
-            result = await decomposeTask(query, model);
-        } else if (options.route) {
-            console.log('Routing to agent...');
-            result = await routeToAgent(query, model);
-        } else if (options.unblock) {
-            console.log('Analyzing blocker...');
-            result = await unblock(query, model);
-        } else {
-            result = await sage(query, model);
+            if (options.decompose) {
+                console.log('Decomposing task...');
+                result = await decomposeTask(query, model);
+            } else if (options.route) {
+                console.log('Routing to agent...');
+                result = await routeToAgent(query, model);
+            } else if (options.unblock) {
+                console.log('Analyzing blocker...');
+                result = await unblock(query, model);
+            } else {
+                result = await sage(query, model);
+            }
+
+            printSageResult(result, options.json);
+        } catch (error: any) {
+            console.error(`\n❌ Error: ${error.message || 'An unknown error occurred'}`);
+            process.exit(1);
         }
-
-        printSageResult(result, options.json);
     });
 
 program
