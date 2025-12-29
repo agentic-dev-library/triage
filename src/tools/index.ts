@@ -11,10 +11,14 @@ import {
 } from './issue.js';
 import { analyzePRTool } from './pr.js';
 import { submitReviewTool } from './review.js';
+import { sageTool } from './sage.js';
+import { visualReviewTool } from './visual.js';
 
 export * from './issue.js';
 export * from './pr.js';
 export * from './review.js';
+export * from './sage.js';
+export * from './visual.js';
 
 export const triageTools = {
     listIssues: listIssuesTool,
@@ -28,6 +32,8 @@ export const triageTools = {
     triageIssue: triageIssueTool,
     submitReview: submitReviewTool,
     analyzePR: analyzePRTool,
+    sage: sageTool,
+    visualReview: visualReviewTool,
 };
 
 export function getTriageTools() {

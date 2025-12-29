@@ -3,6 +3,8 @@
  */
 
 import { generateText, stepCountIs, tool } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { google } from '@ai-sdk/google';
 import { createOllama, ollama } from 'ai-sdk-ollama';
 import type { z } from 'zod';
 
@@ -68,15 +70,24 @@ export async function resolveModel(config: AIConfig = {}): Promise<{
 }> {
     const providerName = config.provider || process.env.TRIAGE_PROVIDER || 'ollama';
 
-    // Ollama remains the default and supports local mode without a key.
     if (providerName === 'ollama') {
         const provider = getProvider(config);
         const modelId = getModel(config);
         return { providerName, modelId, model: provider(modelId) };
     }
 
+    if (providerName === 'anthropic') {
+        const modelId = config.model || process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
+        return { providerName, modelId, model: anthropic(modelId) };
+    }
+
+    if (providerName === 'google' || providerName === 'gemini') {
+        const modelId = config.model || process.env.GOOGLE_MODEL || 'gemini-1.5-pro';
+        return { providerName, modelId, model: google(modelId) };
+    }
+
     throw new Error(
-        `Provider ${providerName} is not supported in this version. Only 'ollama' provider is currently supported. ` +
+        `Provider ${providerName} is not supported. Supported providers: ollama, anthropic, google.` +
             `For other providers, please use the direct AI SDK integration or configure via environment variables.`
     );
 }
