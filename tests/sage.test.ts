@@ -5,7 +5,6 @@ import {
     AgentTypeSchema,
     SageQueryTypeSchema,
     SageResponseSchema,
-    SubtaskSchema,
     TaskDecompositionSchema,
     UnblockResponseSchema,
 } from '../src/schemas/sage.js';

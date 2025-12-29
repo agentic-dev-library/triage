@@ -1,15 +1,17 @@
 import { generateObject, type LanguageModel } from 'ai';
 import {
-    AgentRoutingSchema,
     type AgentRouting,
+    AgentRoutingSchema,
     type SageQueryType,
-    SageResponseSchema,
     type SageResponse,
-    TaskDecompositionSchema,
+    SageResponseSchema,
     type TaskDecomposition,
-    UnblockResponseSchema,
+    TaskDecompositionSchema,
     type UnblockResponse,
+    UnblockResponseSchema,
 } from '../schemas/sage.js';
+
+export type { AgentRouting, SageResponse, TaskDecomposition, UnblockResponse, SageQueryType };
 
 /**
  * Context that can be provided to Sage for better responses
@@ -32,12 +34,12 @@ export function classifyQuery(query: string): SageQueryType {
     const lower = query.toLowerCase();
 
     if (/\b(review|feedback|look at|check)\b/.test(lower)) return 'review';
+    if (/\b(blocked|stuck|help|unblock|can't|cannot)\b/.test(lower)) return 'unblock';
     if (/\b(how|what|why|explain|where|when)\b/.test(lower)) return 'question';
     if (/\b(fix|bug|error|broken|failing|crash)\b/.test(lower)) return 'fix';
     if (/\b(implement|create|add|build|make|write)\b/.test(lower)) return 'implement';
     if (/\b(refactor|cleanup|improve|optimize|reorganize)\b/.test(lower)) return 'refactor';
     if (/\b(decompose|break down|plan|tasks|subtasks|steps)\b/.test(lower)) return 'decompose';
-    if (/\b(blocked|stuck|help|unblock|can't|cannot)\b/.test(lower)) return 'unblock';
     if (/\b(route|assign|delegate|who should)\b/.test(lower)) return 'route';
 
     return 'general';
@@ -175,11 +177,7 @@ Order subtasks logically for execution.`,
  * @param context - Optional context for better routing
  * @returns Agent routing decision
  */
-export async function routeToAgent(
-    task: string,
-    model: LanguageModel,
-    context?: SageContext
-): Promise<AgentRouting> {
+export async function routeToAgent(task: string, model: LanguageModel, context?: SageContext): Promise<AgentRouting> {
     if (!task?.trim()) {
         throw new Error('Task is required');
     }

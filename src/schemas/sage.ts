@@ -31,10 +31,7 @@ export const SageResponseSchema = z.object({
     answer: z.string().describe('The answer to the question or query'),
     queryType: SageQueryTypeSchema.describe('The classified type of the query'),
     confidence: z.number().min(0).max(1).describe('Confidence level in the response (0-1)'),
-    references: z
-        .array(z.string())
-        .optional()
-        .describe('File paths or documentation referenced in the answer'),
+    references: z.array(z.string()).optional().describe('File paths or documentation referenced in the answer'),
     followUp: z.string().optional().describe('Suggested follow-up action or question'),
     agentRecommendation: z
         .object({
@@ -66,10 +63,7 @@ export type Subtask = z.infer<typeof SubtaskSchema>;
 export const TaskDecompositionSchema = z.object({
     originalTask: z.string().describe('The original task that was decomposed'),
     subtasks: z.array(SubtaskSchema).describe('List of subtasks to complete'),
-    executionOrder: z
-        .array(z.string())
-        .optional()
-        .describe('Recommended order to execute subtasks by ID'),
+    executionOrder: z.array(z.string()).optional().describe('Recommended order to execute subtasks by ID'),
     estimatedTotalEffort: z
         .enum(['small', 'medium', 'large', 'epic'])
         .describe('Total estimated effort for all subtasks'),
