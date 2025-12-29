@@ -20,6 +20,7 @@ export default defineConfig({
         'tools/index': 'src/tools/index.ts',
         'handlers/index': 'src/handlers/index.ts',
         'reporters/playwright': 'src/reporters/playwright.ts',
+        'reporters/vitest': 'src/reporters/vitest.ts',
     },
 
     // Output format - ESM only (the package is "type": "module")
