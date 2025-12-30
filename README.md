@@ -3,6 +3,8 @@
 **AI-powered GitHub bots that just work.** Set your API key, drop a workflow file, get intelligent automation.
 
 [![npm](https://img.shields.io/npm/v/@agentic-dev-library/triage)](https://www.npmjs.com/package/@agentic-dev-library/triage)
+[![CI](https://github.com/agentic-dev-library/triage/actions/workflows/ci.yml/badge.svg)](https://github.com/agentic-dev-library/triage/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/agentic-dev-library/triage/badge.svg?branch=main)](https://coveralls.io/github/agentic-dev-library/triage?branch=main)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🤖 The Bots

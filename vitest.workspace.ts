@@ -12,6 +12,11 @@ export default defineWorkspace([
             environment: 'node',
             include: ['**/*.test.ts'],
             setupFiles: ['./setup.ts'],
+            coverage: {
+                provider: 'v8',
+                reporter: ['text', 'lcov', 'json'],
+                reportsDirectory: '../../coverage',
+            },
         },
     },
 ]);
