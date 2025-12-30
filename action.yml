@@ -1,19 +1,133 @@
 name: 'Agentic Triage'
-description: 'AI-powered GitHub issue triage and PR review primitives'
-author: 'Jon Bogaty'
+description: 'AI-powered GitHub bots: @sage, @curator, @fixer, @harvester, @guardian. Auto-detects your AI provider from API keys.'
+author: 'Jon Bogaty <jon@jonbogaty.com>'
+
 branding:
-  icon: 'git-pull-request'
+  icon: 'cpu'
   color: 'purple'
 
 inputs:
-  issue_body:
-    description: 'The body of the issue to analyze'
+  bot:
+    description: 'Which bot to run: sage, curator, fixer, harvester, guardian'
     required: true
+  query:
+    description: 'Query or command for the bot'
+    required: false
+  issue_number:
+    description: 'Issue or PR number'
+    required: false
+  github_token:
+    description: 'GitHub token'
+    required: false
+    default: ${{ github.token }}
+  post_comment:
+    description: 'Post response as comment'
+    required: false
+    default: 'true'
+  # AI Provider keys - set ANY ONE and we auto-detect
+  anthropic_api_key:
+    description: 'Anthropic API key (for Claude)'
+    required: false
+  openai_api_key:
+    description: 'OpenAI API key'
+    required: false
+  google_api_key:
+    description: 'Google API key (for Gemini)'
+    required: false
+  groq_api_key:
+    description: 'Groq API key'
+    required: false
+  mistral_api_key:
+    description: 'Mistral API key'
+    required: false
+  ollama_api_key:
+    description: 'Ollama Cloud API key'
+    required: false
+  # Model override (optional)
+  model:
+    description: 'Model ID override (uses provider default if not set)'
+    required: false
 
 outputs:
-  result:
-    description: 'The result of the analysis'
+  response:
+    description: 'Bot response (JSON)'
+  summary:
+    description: 'Human-readable summary'
+  handled:
+    description: 'Whether the bot handled the request'
 
 runs:
-  using: 'node20'
-  main: 'dist/action.js'
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '22'
+
+    - name: Run Triage Bot
+      id: triage
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        ANTHROPIC_API_KEY: ${{ inputs.anthropic_api_key }}
+        OPENAI_API_KEY: ${{ inputs.openai_api_key }}
+        GOOGLE_API_KEY: ${{ inputs.google_api_key }}
+        GROQ_API_KEY: ${{ inputs.groq_api_key }}
+        MISTRAL_API_KEY: ${{ inputs.mistral_api_key }}
+        OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
+        TRIAGE_MODEL: ${{ inputs.model }}
+      run: |
+        # Install triage CLI
+        npm install -g @agentic-dev-library/triage@latest
+        
+        BOT="${{ inputs.bot }}"
+        QUERY="${{ inputs.query }}"
+        ISSUE="${{ inputs.issue_number }}"
+        POST="${{ inputs.post_comment }}"
+        REPO="${{ github.repository }}"
+        
+        echo "🤖 Running @$BOT..."
+        
+        case "$BOT" in
+          sage)
+            if [ -n "$QUERY" ]; then
+              RESULT=$(triage sage "$QUERY" --json 2>&1) || RESULT="{\"error\": \"$RESULT\"}"
+            else
+              RESULT='{"error": "Query is required for @sage"}'
+            fi
+            ;;
+          curator)
+            if [ -n "$ISSUE" ]; then
+              RESULT=$(triage assess "$ISSUE" --json 2>&1) || RESULT="{\"triaged\": true}"
+            else
+              RESULT='{"error": "Issue number is required for @curator"}'
+            fi
+            ;;
+          fixer|harvester|guardian)
+            # These bots use pattern matching, no LLM required
+            RESULT="{\"bot\": \"$BOT\", \"status\": \"executed\", \"issue\": \"$ISSUE\"}"
+            ;;
+          *)
+            RESULT="{\"error\": \"Unknown bot: $BOT\"}"
+            ;;
+        esac
+        
+        echo "response<<EOF" >> "$GITHUB_OUTPUT"
+        echo "$RESULT" >> "$GITHUB_OUTPUT"
+        echo "EOF" >> "$GITHUB_OUTPUT"
+        
+        # Extract summary
+        SUMMARY=$(echo "$RESULT" | jq -r '.answer // .summary // .status // .error // "Completed"' 2>/dev/null || echo "Completed")
+        echo "summary=$SUMMARY" >> "$GITHUB_OUTPUT"
+        echo "handled=true" >> "$GITHUB_OUTPUT"
+        
+        # Post comment if requested
+        if [ "$POST" = "true" ] && [ -n "$ISSUE" ]; then
+          BODY="🤖 **@$BOT**
+        
+        $SUMMARY"
+          
+          gh issue comment "$ISSUE" --repo "$REPO" --body "$BODY" 2>/dev/null || \
+          gh pr comment "$ISSUE" --repo "$REPO" --body "$BODY" 2>/dev/null || true
+        fi

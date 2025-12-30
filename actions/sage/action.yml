@@ -1,0 +1,149 @@
+name: '@sage'
+description: 'AI-powered Q&A, task decomposition, and agent routing - mentionable as @sage in issues/PRs'
+author: 'Jon Bogaty'
+branding:
+  icon: 'message-circle'
+  color: 'purple'
+
+inputs:
+  query:
+    description: 'The question or task to process'
+    required: true
+  mode:
+    description: 'Mode: answer (default), decompose, route, unblock'
+    required: false
+    default: 'answer'
+  context:
+    description: 'Additional context (issue body, PR diff, etc.)'
+    required: false
+  github_token:
+    description: 'GitHub token for API access'
+    required: false
+    default: ${{ github.token }}
+  issue_number:
+    description: 'Issue/PR number to comment on (if posting response)'
+    required: false
+  post_comment:
+    description: 'Whether to post response as comment'
+    required: false
+    default: 'true'
+  model:
+    description: 'AI model to use'
+    required: false
+    default: 'llama3'
+  provider:
+    description: 'AI provider: ollama, openai, anthropic, google'
+    required: false
+    default: 'ollama'
+  ollama_api_key:
+    description: 'Ollama API key'
+    required: false
+  ollama_host:
+    description: 'Ollama API host'
+    required: false
+
+outputs:
+  response:
+    description: 'The Sage response (JSON)'
+  answer:
+    description: 'Human-readable answer'
+  agent:
+    description: 'Recommended agent (if routing)'
+  confidence:
+    description: 'Confidence score (0-1)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '22'
+
+    - name: Install triage CLI
+      shell: bash
+      run: npm install -g @agentic-dev-library/triage@latest
+
+    - name: Run Sage
+      id: sage
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        OLLAMA_HOST: ${{ inputs.ollama_host }}
+        OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
+        OLLAMA_MODEL: ${{ inputs.model }}
+      run: |
+        set +e
+        
+        # Build command based on mode
+        case "${{ inputs.mode }}" in
+          decompose)
+            CMD="triage sage \"${{ inputs.query }}\" --decompose --json"
+            ;;
+          route)
+            CMD="triage sage \"${{ inputs.query }}\" --route --json"
+            ;;
+          unblock)
+            CMD="triage sage \"${{ inputs.query }}\" --unblock --json"
+            ;;
+          *)
+            CMD="triage sage \"${{ inputs.query }}\" --json"
+            ;;
+        esac
+        
+        echo "Running: $CMD"
+        OUTPUT=$(eval $CMD 2>&1)
+        EXIT_CODE=$?
+        
+        # Parse and set outputs
+        if echo "$OUTPUT" | jq -e . >/dev/null 2>&1; then
+          {
+            echo "response<<EOF"
+            echo "$OUTPUT"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+          
+          ANSWER=$(echo "$OUTPUT" | jq -r '.answer // .diagnosis // ""')
+          AGENT=$(echo "$OUTPUT" | jq -r '.agent // .agentRecommendation.agent // ""')
+          CONFIDENCE=$(echo "$OUTPUT" | jq -r '.confidence // 0')
+          
+          echo "answer=$ANSWER" >> "$GITHUB_OUTPUT"
+          echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
+          echo "confidence=$CONFIDENCE" >> "$GITHUB_OUTPUT"
+        else
+          echo "response=$OUTPUT" >> "$GITHUB_OUTPUT"
+          echo "answer=$OUTPUT" >> "$GITHUB_OUTPUT"
+        fi
+        
+        exit $EXIT_CODE
+
+    - name: Post comment
+      if: inputs.post_comment == 'true' && inputs.issue_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        ANSWER="${{ steps.sage.outputs.answer }}"
+        AGENT="${{ steps.sage.outputs.agent }}"
+        CONFIDENCE="${{ steps.sage.outputs.confidence }}"
+        
+        BODY="🔮 **@sage**
+
+        $ANSWER"
+        
+        if [ -n "$AGENT" ] && [ "$AGENT" != "null" ]; then
+          BODY="$BODY
+
+        📌 **Recommended Agent**: \`@$AGENT\`"
+        fi
+        
+        if [ -n "$CONFIDENCE" ] && [ "$CONFIDENCE" != "0" ]; then
+          PCT=$(echo "$CONFIDENCE * 100" | bc | cut -d. -f1)
+          BODY="$BODY
+        
+        _(Confidence: ${PCT}%)_"
+        fi
+        
+        gh issue comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || \
+        gh pr comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || true

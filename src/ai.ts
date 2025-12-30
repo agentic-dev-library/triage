@@ -1,122 +1,112 @@
 /**
- * AI Client using Vercel AI SDK
+ * AI Client - Auto-detecting, provider-agnostic AI integration
+ *
+ * Just set your API key and it works:
+ *   ANTHROPIC_API_KEY → Uses Claude
+ *   OPENAI_API_KEY → Uses GPT-4
+ *   GOOGLE_API_KEY → Uses Gemini
+ *   (etc.)
+ *
+ * Or explicitly configure:
+ *   const { model } = await getProvider('anthropic', 'claude-3-opus');
  */
 
-import { anthropic } from '@ai-sdk/anthropic';
-import { google } from '@ai-sdk/google';
-import { generateText, stepCountIs, tool } from 'ai';
-import { createOllama, ollama } from 'ai-sdk-ollama';
+import { generateText, streamText, tool, type LanguageModelV1 } from 'ai';
 import type { z } from 'zod';
+import { detectProvider, getAIProvider, type DetectedProvider } from './ai-providers/index.js';
 
-// Use a looser type for tools to avoid version incompatibilities between
-// @ai-sdk/mcp and the ai package
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type ToolSet = Record<string, any>;
+// Re-export provider utilities
+export { detectProvider, getAIProvider, getAvailableAIProviders, listAIProviders, DEFAULT_MODELS } from './ai-providers/index.js';
+export type { DetectedProvider } from './ai-providers/index.js';
 
-// Default model - qwen3-coder:480b on Ollama Cloud has excellent tool support
-export const DEFAULT_MODEL = 'qwen3-coder:480b';
-export const CLOUD_HOST = 'https://ollama.com/api';
-export const LOCAL_HOST = 'http://localhost:11434/api';
+// Tool type (loose to avoid version conflicts)
+export type ToolSet = Record<string, ReturnType<typeof tool>>;
 
-export interface AIConfig {
+// Cached detected provider
+let cachedProvider: DetectedProvider | null = null;
+
+/**
+ * Get the auto-detected AI model
+ * Caches the result for performance
+ */
+export async function getModel(forceRefresh = false): Promise<DetectedProvider> {
+    if (!cachedProvider || forceRefresh) {
+        cachedProvider = await detectProvider();
+    }
+    return cachedProvider;
+}
+
+/**
+ * Resolve a model - either auto-detect or use explicit provider/model
+ */
+export async function resolveModel(options: {
     provider?: string;
-    apiKey?: string;
     model?: string;
-    host?: string;
+} = {}): Promise<{ providerName: string; modelId: string; model: LanguageModelV1 }> {
+    if (options.provider) {
+        // Explicit provider requested
+        const { model, modelId } = await getAIProvider(options.provider, options.model);
+        return { providerName: options.provider, modelId, model };
+    }
+
+    // Auto-detect
+    const detected = await getModel();
+    return {
+        providerName: detected.name,
+        modelId: detected.modelId,
+        model: detected.model,
+    };
 }
 
-/**
- * Get or create a Ollama provider instance
- * Uses the default `ollama` export for local, or createOllama for cloud
- */
-export function getProvider(config: AIConfig = {}) {
-    const apiKey = config.apiKey || process.env.OLLAMA_API_KEY;
-    const hostEnv = config.host || process.env.OLLAMA_HOST;
-
-    // If no custom config needed, use default provider
-    if (!apiKey && !hostEnv) {
-        return ollama;
-    }
-
-    // Normalize host URL - ensure it ends with /api for Ollama endpoints
-    let host = hostEnv || (apiKey ? CLOUD_HOST : LOCAL_HOST);
-    if (host && !host.endsWith('/api')) {
-        host = `${host.replace(/\/$/, '')}/api`;
-    }
-
-    // Create custom provider with auth headers for cloud
-    // Note: We don't cache this globally to avoid issues with different configurations
-    return createOllama({
-        baseURL: host,
-        headers: apiKey ? { Authorization: `Bearer ${apiKey}` } : undefined,
-    });
-}
-
-/**
- * Get the model ID to use
- */
-export function getModel(config: AIConfig = {}): string {
-    return config.model || process.env.OLLAMA_MODEL || DEFAULT_MODEL;
-}
-
-/**
- * Resolve the Vercel AI SDK model instance to use.
- */
-export async function resolveModel(config: AIConfig = {}): Promise<{
-    providerName: string;
-    modelId: string;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    model: any;
-}> {
-    const providerName = config.provider || process.env.TRIAGE_PROVIDER || 'ollama';
-
-    if (providerName === 'ollama') {
-        const provider = getProvider(config);
-        const modelId = getModel(config);
-        return { providerName, modelId, model: provider(modelId) };
-    }
-
-    if (providerName === 'anthropic') {
-        const modelId = config.model || process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20241022';
-        return { providerName, modelId, model: anthropic(modelId) };
-    }
-
-    if (providerName === 'google' || providerName === 'gemini') {
-        const modelId = config.model || process.env.GOOGLE_MODEL || 'gemini-1.5-pro';
-        return { providerName, modelId, model: google(modelId) };
-    }
-
-    throw new Error(
-        `Provider ${providerName} is not supported. Supported providers: ollama, anthropic, google.` +
-            `For other providers, please use the direct AI SDK integration or configure via environment variables.`
-    );
-}
-
-export interface GenerateOptions extends AIConfig {
-    systemPrompt?: string;
+export interface GenerateOptions {
+    /** Explicit provider name (auto-detects if not set) */
+    provider?: string;
+    /** Model ID (uses provider default if not set) */
+    model?: string;
+    /** System prompt */
+    system?: string;
+    /** Max output tokens */
     maxTokens?: number;
+    /** Temperature (0-1) */
     temperature?: number;
 }
 
 /**
- * Generate text using the AI model (no tools)
+ * Generate text using auto-detected or specified provider
  */
 export async function generate(prompt: string, options: GenerateOptions = {}): Promise<string> {
-    const resolved = await resolveModel(options);
+    const { model } = await resolveModel(options);
 
     const result = await generateText({
-        model: resolved.model,
-        system: options.systemPrompt,
+        model,
+        system: options.system,
         prompt,
         temperature: options.temperature,
-        maxOutputTokens: options.maxTokens,
+        maxTokens: options.maxTokens,
     });
 
     return result.text;
 }
 
+/**
+ * Stream text using auto-detected or specified provider
+ */
+export async function stream(prompt: string, options: GenerateOptions = {}) {
+    const { model } = await resolveModel(options);
+
+    return streamText({
+        model,
+        system: options.system,
+        prompt,
+        temperature: options.temperature,
+        maxTokens: options.maxTokens,
+    });
+}
+
 export interface GenerateWithToolsOptions extends GenerateOptions {
+    /** Maximum tool call steps */
     maxSteps?: number;
+    /** Callback for each step */
     onStepFinish?: (step: { toolCalls?: unknown[]; toolResults?: unknown[]; text?: string }) => void;
 }
 
@@ -129,24 +119,23 @@ export interface GenerateWithToolsResult {
 }
 
 /**
- * Generate text with tools - uses AI SDK's built-in multi-step support
+ * Generate with tools - multi-step agent execution
  */
 export async function generateWithTools(
     prompt: string,
     tools: ToolSet,
     options: GenerateWithToolsOptions = {}
 ): Promise<GenerateWithToolsResult> {
-    const resolved = await resolveModel(options);
-    const maxSteps = options.maxSteps ?? 10;
+    const { model } = await resolveModel(options);
 
     const result = await generateText({
-        model: resolved.model,
-        system: options.systemPrompt,
+        model,
+        system: options.system,
         prompt,
         tools,
-        stopWhen: stepCountIs(maxSteps),
+        maxSteps: options.maxSteps ?? 10,
         temperature: options.temperature,
-        maxOutputTokens: options.maxTokens,
+        maxTokens: options.maxTokens,
         onStepFinish: options.onStepFinish
             ? (step) => {
                   options.onStepFinish?.({
@@ -158,19 +147,13 @@ export async function generateWithTools(
             : undefined,
     });
 
-    // Collect all tool calls and results from all steps
+    // Collect all tool calls and results
     const allToolCalls: unknown[] = [];
     const allToolResults: unknown[] = [];
 
-    if (result.steps) {
-        for (const step of result.steps) {
-            if (step.toolCalls) {
-                allToolCalls.push(...step.toolCalls);
-            }
-            if (step.toolResults) {
-                allToolResults.push(...step.toolResults);
-            }
-        }
+    for (const step of result.steps || []) {
+        if (step.toolCalls) allToolCalls.push(...step.toolCalls);
+        if (step.toolResults) allToolResults.push(...step.toolResults);
     }
 
     return {
@@ -183,21 +166,20 @@ export async function generateWithTools(
 }
 
 /**
- * Create a simple tool definition helper
- * Wraps the AI SDK's tool() function for convenience
+ * Create a tool definition
  */
 export function createTool<T extends z.ZodType>(config: {
     description: string;
-    inputSchema: T;
+    parameters: T;
     execute: (input: z.infer<T>) => Promise<unknown>;
 }) {
     return tool({
         description: config.description,
-        inputSchema: config.inputSchema,
+        parameters: config.parameters,
         execute: config.execute,
     });
 }
 
-// Re-export useful types and functions from ai package
-export { stepCountIs, tool } from 'ai';
+// Re-export from ai package
+export { tool, generateText, streamText } from 'ai';
 export { z } from 'zod';

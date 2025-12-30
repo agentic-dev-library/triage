@@ -1,0 +1,212 @@
+name: '@curator'
+description: 'AI-powered issue triage, labeling, and assignment - mentionable as @curator'
+author: 'Jon Bogaty'
+branding:
+  icon: 'tag'
+  color: 'orange'
+
+inputs:
+  issue_number:
+    description: 'Issue number to triage'
+    required: false
+  issue_body:
+    description: 'Issue body text (alternative to issue_number)'
+    required: false
+  issue_title:
+    description: 'Issue title'
+    required: false
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  repository:
+    description: 'Repository owner/repo'
+    required: false
+    default: ${{ github.repository }}
+  apply_labels:
+    description: 'Whether to apply suggested labels'
+    required: false
+    default: 'true'
+  apply_assignees:
+    description: 'Whether to apply suggested assignees'
+    required: false
+    default: 'false'
+  post_comment:
+    description: 'Whether to post triage summary as comment'
+    required: false
+    default: 'true'
+  model:
+    description: 'AI model to use'
+    required: false
+    default: 'llama3'
+  ollama_api_key:
+    description: 'Ollama API key'
+    required: false
+
+outputs:
+  labels:
+    description: 'Suggested labels (comma-separated)'
+  priority:
+    description: 'Priority: critical, high, medium, low'
+  type:
+    description: 'Issue type: bug, feature, question, docs, chore'
+  effort:
+    description: 'Effort estimate: xs, s, m, l, xl'
+  agent:
+    description: 'Recommended agent to handle'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '22'
+
+    - name: Get issue details
+      id: issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        if [ -n "${{ inputs.issue_number }}" ]; then
+          ISSUE=$(gh issue view "${{ inputs.issue_number }}" --repo "${{ inputs.repository }}" --json title,body,labels)
+          TITLE=$(echo "$ISSUE" | jq -r '.title')
+          BODY=$(echo "$ISSUE" | jq -r '.body')
+          EXISTING_LABELS=$(echo "$ISSUE" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+        else
+          TITLE="${{ inputs.issue_title }}"
+          BODY="${{ inputs.issue_body }}"
+          EXISTING_LABELS=""
+        fi
+        
+        echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+        {
+          echo "body<<EOF"
+          echo "$BODY"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        echo "existing_labels=$EXISTING_LABELS" >> "$GITHUB_OUTPUT"
+
+    - name: Triage with AI
+      id: triage
+      shell: bash
+      env:
+        OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
+        OLLAMA_MODEL: ${{ inputs.model }}
+      run: |
+        TITLE="${{ steps.issue.outputs.title }}"
+        BODY="${{ steps.issue.outputs.body }}"
+        
+        # Pattern-based triage (fast, no LLM needed for obvious cases)
+        LABELS=""
+        PRIORITY="medium"
+        TYPE="chore"
+        EFFORT="m"
+        AGENT="ollama"
+        
+        # Detect type from title/body
+        COMBINED="$TITLE $BODY"
+        
+        if echo "$COMBINED" | grep -qiE "bug|error|crash|broken|fix|issue|problem"; then
+          TYPE="bug"
+          LABELS="bug"
+          PRIORITY="high"
+          AGENT="cursor"
+        elif echo "$COMBINED" | grep -qiE "feature|add|implement|create|new|enhance"; then
+          TYPE="feature"
+          LABELS="enhancement"
+          PRIORITY="medium"
+          AGENT="jules"
+        elif echo "$COMBINED" | grep -qiE "question|how|what|why|help|confused"; then
+          TYPE="question"
+          LABELS="question"
+          PRIORITY="low"
+          AGENT="sage"
+        elif echo "$COMBINED" | grep -qiE "doc|readme|typo|spelling|grammar"; then
+          TYPE="docs"
+          LABELS="documentation"
+          PRIORITY="low"
+          AGENT="jules"
+        elif echo "$COMBINED" | grep -qiE "refactor|clean|organize|improve|performance"; then
+          TYPE="chore"
+          LABELS="refactor"
+          PRIORITY="medium"
+          AGENT="jules"
+        fi
+        
+        # Detect priority from keywords
+        if echo "$COMBINED" | grep -qiE "urgent|critical|blocker|asap|production|breaking"; then
+          PRIORITY="critical"
+        elif echo "$COMBINED" | grep -qiE "security|vulnerability|cve|exploit"; then
+          PRIORITY="critical"
+          LABELS="$LABELS,security"
+        fi
+        
+        # Detect effort from size indicators
+        if echo "$COMBINED" | grep -qiE "quick|simple|small|minor|trivial"; then
+          EFFORT="xs"
+        elif echo "$COMBINED" | grep -qiE "complex|large|major|overhaul|rewrite"; then
+          EFFORT="xl"
+          AGENT="cursor"
+        fi
+        
+        echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
+        echo "priority=$PRIORITY" >> "$GITHUB_OUTPUT"
+        echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+        echo "effort=$EFFORT" >> "$GITHUB_OUTPUT"
+        echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
+
+    - name: Apply labels
+      if: inputs.apply_labels == 'true' && inputs.issue_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        LABELS="${{ steps.triage.outputs.labels }}"
+        PRIORITY="${{ steps.triage.outputs.priority }}"
+        
+        # Add priority label
+        case "$PRIORITY" in
+          critical) LABELS="$LABELS,priority:critical" ;;
+          high) LABELS="$LABELS,priority:high" ;;
+          medium) LABELS="$LABELS,priority:medium" ;;
+          low) LABELS="$LABELS,priority:low" ;;
+        esac
+        
+        # Apply labels (creates if they don't exist)
+        for LABEL in $(echo "$LABELS" | tr ',' ' '); do
+          [ -z "$LABEL" ] && continue
+          gh issue edit "${{ inputs.issue_number }}" --repo "${{ inputs.repository }}" --add-label "$LABEL" 2>/dev/null || true
+        done
+
+    - name: Post comment
+      if: inputs.post_comment == 'true' && inputs.issue_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        TYPE="${{ steps.triage.outputs.type }}"
+        PRIORITY="${{ steps.triage.outputs.priority }}"
+        EFFORT="${{ steps.triage.outputs.effort }}"
+        AGENT="${{ steps.triage.outputs.agent }}"
+        
+        case "$PRIORITY" in
+          critical) P_EMOJI="🔴" ;;
+          high) P_EMOJI="🟠" ;;
+          medium) P_EMOJI="🟡" ;;
+          *) P_EMOJI="⚪" ;;
+        esac
+        
+        BODY="📋 **@curator** Triage
+
+        | Field | Value |
+        |-------|-------|
+        | Type | \`$TYPE\` |
+        | Priority | $P_EMOJI \`$PRIORITY\` |
+        | Effort | \`$EFFORT\` |
+        | Agent | \`@$AGENT\` |
+
+        ---
+        _Use \`@$AGENT\` to start work on this issue._"
+        
+        gh issue comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || true

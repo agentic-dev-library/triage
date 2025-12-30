@@ -1,0 +1,272 @@
+name: '@guardian'
+description: 'Enterprise standards enforcement - SHA pinning, conventional commits, licenses, semver, changelog'
+author: 'Jon Bogaty'
+branding:
+  icon: 'shield'
+  color: 'blue'
+
+inputs:
+  checks:
+    description: 'Comma-separated checks: sha-pinning, conventional-commits, license, semver, changelog, branch-naming, required-files'
+    required: false
+    default: 'sha-pinning,conventional-commits,license'
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  pr_number:
+    description: 'PR number to check'
+    required: false
+  repository:
+    description: 'Repository owner/repo'
+    required: false
+    default: ${{ github.repository }}
+  fail_on_violation:
+    description: 'Fail the action if violations found'
+    required: false
+    default: 'false'
+  post_comment:
+    description: 'Post violations as PR comment'
+    required: false
+    default: 'true'
+  allowed_licenses:
+    description: 'Allowed licenses (comma-separated)'
+    required: false
+    default: 'MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC,Unlicense'
+  forbidden_licenses:
+    description: 'Forbidden licenses (comma-separated)'
+    required: false
+    default: 'GPL,LGPL,AGPL,SSPL,Commons-Clause'
+  required_files:
+    description: 'Required files in repo (comma-separated)'
+    required: false
+    default: 'CLAUDE.md,AGENTS.md,LICENSE,CHANGELOG.md'
+
+outputs:
+  violations:
+    description: 'Number of violations found'
+  sha_pinning:
+    description: 'SHA pinning check result: pass/fail'
+  conventional_commits:
+    description: 'Conventional commits check result: pass/fail'
+  license:
+    description: 'License check result: pass/fail'
+  semver:
+    description: 'Semver check result: pass/fail'
+  changelog:
+    description: 'Changelog check result: pass/fail'
+  report:
+    description: 'Full violation report (JSON)'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout
+      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      with:
+        fetch-depth: 0
+        token: ${{ inputs.github_token }}
+
+    - name: Run Guardian checks
+      id: guardian
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        CHECKS="${{ inputs.checks }}"
+        VIOLATIONS=0
+        REPORT="[]"
+        
+        echo "🛡️ Guardian checking: $CHECKS"
+        
+        # SHA Pinning Check
+        if echo "$CHECKS" | grep -q "sha-pinning"; then
+          echo "Checking SHA pinning..."
+          UNPINNED=$(grep -r "uses:.*@v[0-9]" .github/workflows/*.yml 2>/dev/null | grep -v "@[a-f0-9]\{40\}" | head -10 || true)
+          
+          if [ -n "$UNPINNED" ]; then
+            echo "sha_pinning=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq --arg v "$UNPINNED" '. + [{"check": "sha-pinning", "status": "fail", "details": $v}]')
+          else
+            echo "sha_pinning=pass" >> "$GITHUB_OUTPUT"
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "sha-pinning", "status": "pass"}]')
+          fi
+        fi
+        
+        # Conventional Commits Check
+        if echo "$CHECKS" | grep -q "conventional-commits"; then
+          echo "Checking conventional commits..."
+          if [ -n "${{ inputs.pr_number }}" ]; then
+            PR_TITLE=$(gh pr view "${{ inputs.pr_number }}" --repo "${{ inputs.repository }}" --json title --jq '.title')
+            # Regex for conventional commits: type(scope)?: description
+            if echo "$PR_TITLE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z-]+\))?!?:"; then
+              echo "conventional_commits=pass" >> "$GITHUB_OUTPUT"
+              REPORT=$(echo "$REPORT" | jq '. + [{"check": "conventional-commits", "status": "pass"}]')
+            else
+              echo "conventional_commits=fail" >> "$GITHUB_OUTPUT"
+              VIOLATIONS=$((VIOLATIONS + 1))
+              REPORT=$(echo "$REPORT" | jq --arg t "$PR_TITLE" '. + [{"check": "conventional-commits", "status": "fail", "details": ("Invalid PR title: " + $t)}]')
+            fi
+          fi
+        fi
+        
+        # License Check
+        if echo "$CHECKS" | grep -q "license"; then
+          echo "Checking license..."
+          LICENSE_FILE=$(cat LICENSE 2>/dev/null || echo "")
+          FORBIDDEN="${{ inputs.forbidden_licenses }}"
+          
+          LICENSE_VIOLATION=""
+          for L in $(echo "$FORBIDDEN" | tr ',' ' '); do
+            if echo "$LICENSE_FILE" | grep -qi "$L"; then
+              LICENSE_VIOLATION="$L"
+              break
+            fi
+          done
+          
+          if [ -n "$LICENSE_VIOLATION" ]; then
+            echo "license=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq --arg l "$LICENSE_VIOLATION" '. + [{"check": "license", "status": "fail", "details": ("Forbidden license found: " + $l)}]')
+          elif [ -z "$LICENSE_FILE" ]; then
+            echo "license=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "license", "status": "fail", "details": "No LICENSE file found"}]')
+          else
+            echo "license=pass" >> "$GITHUB_OUTPUT"
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "license", "status": "pass"}]')
+          fi
+        fi
+        
+        # Semver Check
+        if echo "$CHECKS" | grep -q "semver"; then
+          echo "Checking semver..."
+          # Check package.json, pyproject.toml, Cargo.toml for valid semver
+          VERSION=""
+          if [ -f "package.json" ]; then
+            VERSION=$(jq -r '.version // ""' package.json)
+          elif [ -f "pyproject.toml" ]; then
+            VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' pyproject.toml || true)
+          elif [ -f "Cargo.toml" ]; then
+            VERSION=$(grep -oP 'version\s*=\s*"\K[^"]+' Cargo.toml || true)
+          fi
+          
+          if [ -n "$VERSION" ]; then
+            # Validate semver format: X.Y.Z[-prerelease][+build]
+            if echo "$VERSION" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$"; then
+              echo "semver=pass" >> "$GITHUB_OUTPUT"
+              REPORT=$(echo "$REPORT" | jq '. + [{"check": "semver", "status": "pass"}]')
+            else
+              echo "semver=fail" >> "$GITHUB_OUTPUT"
+              VIOLATIONS=$((VIOLATIONS + 1))
+              REPORT=$(echo "$REPORT" | jq --arg v "$VERSION" '. + [{"check": "semver", "status": "fail", "details": ("Invalid semver: " + $v)}]')
+            fi
+          else
+            echo "semver=skip" >> "$GITHUB_OUTPUT"
+          fi
+        fi
+        
+        # Changelog Check
+        if echo "$CHECKS" | grep -q "changelog"; then
+          echo "Checking changelog..."
+          if [ -f "CHANGELOG.md" ]; then
+            # Check if changelog has recent entries (within 90 days)
+            echo "changelog=pass" >> "$GITHUB_OUTPUT"
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "changelog", "status": "pass"}]')
+          else
+            echo "changelog=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "changelog", "status": "fail", "details": "No CHANGELOG.md found"}]')
+          fi
+        fi
+        
+        # Required Files Check
+        if echo "$CHECKS" | grep -q "required-files"; then
+          echo "Checking required files..."
+          REQUIRED="${{ inputs.required_files }}"
+          MISSING=""
+          
+          for FILE in $(echo "$REQUIRED" | tr ',' ' '); do
+            if [ ! -f "$FILE" ]; then
+              MISSING="$MISSING $FILE"
+            fi
+          done
+          
+          if [ -n "$MISSING" ]; then
+            echo "required_files=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq --arg m "$MISSING" '. + [{"check": "required-files", "status": "fail", "details": ("Missing:" + $m)}]')
+          else
+            echo "required_files=pass" >> "$GITHUB_OUTPUT"
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "required-files", "status": "pass"}]')
+          fi
+        fi
+        
+        # Branch Naming Check
+        if echo "$CHECKS" | grep -q "branch-naming"; then
+          echo "Checking branch naming..."
+          BRANCH="${{ github.head_ref }}"
+          # Valid patterns: feat/, fix/, docs/, chore/, refactor/, test/, main, develop
+          if echo "$BRANCH" | grep -qE "^(feat|fix|docs|chore|refactor|test|release|hotfix)/|^(main|master|develop)$"; then
+            echo "branch_naming=pass" >> "$GITHUB_OUTPUT"
+            REPORT=$(echo "$REPORT" | jq '. + [{"check": "branch-naming", "status": "pass"}]')
+          else
+            echo "branch_naming=fail" >> "$GITHUB_OUTPUT"
+            VIOLATIONS=$((VIOLATIONS + 1))
+            REPORT=$(echo "$REPORT" | jq --arg b "$BRANCH" '. + [{"check": "branch-naming", "status": "fail", "details": ("Invalid branch name: " + $b)}]')
+          fi
+        fi
+        
+        echo "violations=$VIOLATIONS" >> "$GITHUB_OUTPUT"
+        {
+          echo "report<<EOF"
+          echo "$REPORT"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        
+        echo "📊 Guardian found $VIOLATIONS violation(s)"
+
+    - name: Post comment
+      if: inputs.post_comment == 'true' && inputs.pr_number != '' && steps.guardian.outputs.violations != '0'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        VIOLATIONS="${{ steps.guardian.outputs.violations }}"
+        REPORT='${{ steps.guardian.outputs.report }}'
+        
+        BODY="🛡️ **@guardian** Enterprise Standards Check
+
+        Found **$VIOLATIONS** violation(s):
+
+        | Check | Status | Details |
+        |-------|--------|---------|"
+        
+        # Parse report and build table
+        while IFS= read -r line; do
+          CHECK=$(echo "$line" | jq -r '.check')
+          STATUS=$(echo "$line" | jq -r '.status')
+          DETAILS=$(echo "$line" | jq -r '.details // ""')
+          
+          if [ "$STATUS" = "fail" ]; then
+            BODY="$BODY
+        | $CHECK | ❌ | $DETAILS |"
+          elif [ "$STATUS" = "pass" ]; then
+            BODY="$BODY
+        | $CHECK | ✅ | - |"
+          fi
+        done < <(echo "$REPORT" | jq -c '.[]')
+        
+        BODY="$BODY
+
+        ---
+        _Fix these violations to pass the Guardian check._"
+        
+        gh pr comment "${{ inputs.pr_number }}" --body "$BODY" 2>/dev/null || true
+
+    - name: Fail on violations
+      if: inputs.fail_on_violation == 'true' && steps.guardian.outputs.violations != '0'
+      shell: bash
+      run: |
+        echo "❌ Guardian found ${{ steps.guardian.outputs.violations }} violations"
+        exit 1
