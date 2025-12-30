@@ -13,11 +13,11 @@
 
 import { generateText, streamText, tool, type LanguageModelV1 } from 'ai';
 import type { z } from 'zod';
-import { detectProvider, getAIProvider, type DetectedProvider } from './ai-providers/index.js';
+import { detectProvider, getAIProvider, type DetectedProvider } from './ai/index.js';
 
 // Re-export provider utilities
-export { detectProvider, getAIProvider, getAvailableAIProviders, listAIProviders, DEFAULT_MODELS } from './ai-providers/index.js';
-export type { DetectedProvider } from './ai-providers/index.js';
+export { detectProvider, getAIProvider, getAvailableAIProviders, listAIProviders, DEFAULT_MODELS } from './ai/index.js';
+export type { DetectedProvider } from './ai/index.js';
 
 // Tool type (loose to avoid version conflicts)
 export type ToolSet = Record<string, ReturnType<typeof tool>>;

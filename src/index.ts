@@ -165,7 +165,7 @@ export {
     type TriageIssue,
     type TriageProvider,
     type UpdateIssueOptions,
-} from './providers/index.js';
+} from './trackers/index.js';
 
 // ============================================================================
 // Triage Unified API & Tools

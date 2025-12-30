@@ -1,11 +1,10 @@
 /**
- * Triage Providers
+ * Issue Trackers
  *
- * Multi-provider abstraction for issue tracking systems.
- * Similar to how AI providers work,
- * agentic-triage has multiple triage/issue providers.
+ * Multi-tracker abstraction for issue management systems.
+ * Connect to your issue tracker and manage issues uniformly.
  *
- * Supported Providers:
+ * Supported Trackers:
  * - GitHub Issues (github)
  * - Beads Issue Tracker (beads) - local-first, AI-native
  * - Jira (jira)
