@@ -5,6 +5,7 @@
 [![npm](https://img.shields.io/npm/v/@agentic-dev-library/triage)](https://www.npmjs.com/package/@agentic-dev-library/triage)
 [![CI](https://github.com/agentic-dev-library/triage/actions/workflows/ci.yml/badge.svg)](https://github.com/agentic-dev-library/triage/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/agentic-dev-library/triage/badge.svg?branch=main)](https://coveralls.io/github/agentic-dev-library/triage?branch=main)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=agentic-dev-library_triage&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=agentic-dev-library_triage)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ## 🤖 The Bots
