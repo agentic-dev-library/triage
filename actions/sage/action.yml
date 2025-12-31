@@ -56,7 +56,7 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      uses: actions/setup-node@v6
       with:
         node-version: '22'
 
@@ -123,27 +123,27 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        SAGE_ANSWER: ${{ steps.sage.outputs.answer }}
+        SAGE_AGENT: ${{ steps.sage.outputs.agent }}
+        SAGE_CONFIDENCE: ${{ steps.sage.outputs.confidence }}
+        ISSUE_NUM: ${{ inputs.issue_number }}
       run: |
-        ANSWER="${steps_sage_outputs_answer}"
-        AGENT="${{ steps.sage.outputs.agent }}"
-        CONFIDENCE="${{ steps.sage.outputs.confidence }}"
-        
         BODY="🔮 **@sage**
 
-        $ANSWER"
+        $SAGE_ANSWER"
         
-        if [ -n "$AGENT" ] && [ "$AGENT" != "null" ]; then
+        if [ -n "$SAGE_AGENT" ] && [ "$SAGE_AGENT" != "null" ]; then
           BODY="$BODY
 
-        📌 **Recommended Agent**: \`@$AGENT\`"
+        📌 **Recommended Agent**: \`@$SAGE_AGENT\`"
         fi
         
-        if [ -n "$CONFIDENCE" ] && [ "$CONFIDENCE" != "0" ]; then
-          PCT=$(echo "$CONFIDENCE * 100" | bc | cut -d. -f1)
+        if [ -n "$SAGE_CONFIDENCE" ] && [ "$SAGE_CONFIDENCE" != "0" ]; then
+          PCT=$(echo "$SAGE_CONFIDENCE * 100" | bc | cut -d. -f1)
           BODY="$BODY
         
         _(Confidence: ${PCT}%)_"
         fi
         
-        gh issue comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || \
-        gh pr comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || true
+        gh issue comment "$ISSUE_NUM" --body "$BODY" 2>/dev/null || \
+        gh pr comment "$ISSUE_NUM" --body "$BODY" 2>/dev/null || true

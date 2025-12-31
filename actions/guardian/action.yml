@@ -61,7 +61,7 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout
-      uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      uses: actions/checkout@v6
       with:
         fetch-depth: 0
         token: ${{ inputs.github_token }}
@@ -71,8 +71,13 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        CHECKS: ${{ inputs.checks }}
+        PR_NUM: ${{ inputs.pr_number }}
+        REPO: ${{ inputs.repository }}
+        FORBIDDEN: ${{ inputs.forbidden_licenses }}
+        REQUIRED: ${{ inputs.required_files }}
+        BRANCH: ${{ github.head_ref }}
       run: |
-        CHECKS="${{ inputs.checks }}"
         VIOLATIONS=0
         REPORT="[]"
         
@@ -96,9 +101,8 @@ runs:
         # Conventional Commits Check
         if echo "$CHECKS" | grep -q "conventional-commits"; then
           echo "Checking conventional commits..."
-          if [ -n "${{ inputs.pr_number }}" ]; then
-            PR_TITLE=$(gh pr view "${{ inputs.pr_number }}" --repo "${{ inputs.repository }}" --json title --jq '.title')
-            # Regex for conventional commits: type(scope)?: description
+          if [ -n "$PR_NUM" ]; then
+            PR_TITLE=$(gh pr view "$PR_NUM" --repo "$REPO" --json title --jq '.title')
             if echo "$PR_TITLE" | grep -qE "^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z-]+\))?!?: "; then
               echo "conventional_commits=pass" >> "$GITHUB_OUTPUT"
               REPORT=$(echo "$REPORT" | jq '. + [{"check": "conventional-commits", "status": "pass"}]')
@@ -114,7 +118,6 @@ runs:
         if echo "$CHECKS" | grep -q "license"; then
           echo "Checking license..."
           LICENSE_FILE=$(cat LICENSE 2>/dev/null || echo "")
-          FORBIDDEN="${{ inputs.forbidden_licenses }}"
           
           LICENSE_VIOLATION=""
           for L in $(echo "$FORBIDDEN" | tr ',' ' '); do
@@ -141,7 +144,6 @@ runs:
         # Semver Check
         if echo "$CHECKS" | grep -q "semver"; then
           echo "Checking semver..."
-          # Check package.json, pyproject.toml, Cargo.toml for valid semver
           VERSION=""
           if [ -f "package.json" ]; then
             VERSION=$(jq -r '.version // ""' package.json)
@@ -152,7 +154,6 @@ runs:
           fi
           
           if [ -n "$VERSION" ]; then
-            # Validate semver format: X.Y.Z[-prerelease][+build]
             if echo "$VERSION" | grep -qE "^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?(\+[a-zA-Z0-9.-]+)?$"; then
               echo "semver=pass" >> "$GITHUB_OUTPUT"
               REPORT=$(echo "$REPORT" | jq '. + [{"check": "semver", "status": "pass"}]')
@@ -170,7 +171,6 @@ runs:
         if echo "$CHECKS" | grep -q "changelog"; then
           echo "Checking changelog..."
           if [ -f "CHANGELOG.md" ]; then
-            # Check if changelog has recent entries (within 90 days)
             echo "changelog=pass" >> "$GITHUB_OUTPUT"
             REPORT=$(echo "$REPORT" | jq '. + [{"check": "changelog", "status": "pass"}]')
           else
@@ -183,9 +183,7 @@ runs:
         # Required Files Check
         if echo "$CHECKS" | grep -q "required-files"; then
           echo "Checking required files..."
-          REQUIRED="${{ inputs.required_files }}"
           MISSING=""
-          
           for FILE in $(echo "$REQUIRED" | tr ',' ' '); do
             if [ ! -f "$FILE" ]; then
               MISSING="$MISSING $FILE"
@@ -205,8 +203,6 @@ runs:
         # Branch Naming Check
         if echo "$CHECKS" | grep -q "branch-naming"; then
           echo "Checking branch naming..."
-          BRANCH="${{ github.head_ref }}"
-          # Valid patterns: feat/, fix/, docs/, chore/, refactor/, test/, main, develop
           if echo "$BRANCH" | grep -qE "^(feat|fix|docs|chore|refactor|test|release|hotfix)/|^(main|master|develop)$"; then
             echo "branch_naming=pass" >> "$GITHUB_OUTPUT"
             REPORT=$(echo "$REPORT" | jq '. + [{"check": "branch-naming", "status": "pass"}]')
@@ -231,13 +227,13 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        G_VIOLATIONS: ${{ steps.guardian.outputs.violations }}
+        G_REPORT: ${{ steps.guardian.outputs.report }}
+        G_PR_NUM: ${{ inputs.pr_number }}
       run: |
-        VIOLATIONS="${{ steps.guardian.outputs.violations }}"
-        REPORT="${steps_guardian_outputs_report}"
-        
         BODY="🛡️ **@guardian** Enterprise Standards Check
 
-        Found **$VIOLATIONS** violation(s):
+        Found **$G_VIOLATIONS** violation(s):
 
         | Check | Status | Details |
         |-------|--------|---------|"
@@ -255,14 +251,14 @@ runs:
             BODY="$BODY
         | $CHECK | ✅ | - |"
           fi
-        done < <(echo "$REPORT" | jq -c '.[]')
+        done < <(echo "$G_REPORT" | jq -c '.[]')
         
         BODY="$BODY
 
         ---
         _Fix these violations to pass the Guardian check._"
         
-        gh pr comment "${{ inputs.pr_number }}" --body "$BODY" 2>/dev/null || true
+        gh pr comment "$G_PR_NUM" --body "$BODY" 2>/dev/null || true
 
     - name: Fail on violations
       if: inputs.fail_on_violation == 'true' && steps.guardian.outputs.violations != '0'
