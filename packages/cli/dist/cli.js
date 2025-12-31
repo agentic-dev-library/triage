@@ -12,6 +12,12 @@ import {
   sage,
   unblock
 } from "@agentic/triage-core";
+import {
+  CuratorBot,
+  FixerBot,
+  GuardianBot,
+  HarvesterBot
+} from "@agentic/triage-bots";
 var program = new Command();
 program.name("agentic-triage").description("AI-powered GitHub issue triage and PR review primitives").version("0.2.1");
 program.command("assess").description("Assess an issue").argument("<issue>", "Issue number").action(async (issueNum) => {
@@ -77,6 +83,74 @@ program.command("sage").description("Ask Sage a question or get guidance").argum
     result = await sage(query, model);
   }
   printSageResult(result, options.json);
+});
+program.command("curate").description("Triage an issue").argument("<content>", "Issue content (title and body)").option("--json", "Output as JSON").action(async (content, options) => {
+  const curator = new CuratorBot();
+  const response = await curator.handle({
+    body: content,
+    query: "",
+    isPR: false,
+    number: 0,
+    owner: "cli",
+    repo: "cli",
+    author: "cli"
+  });
+  if (options.json) {
+    console.log(JSON.stringify(response, null, 2));
+  } else {
+    console.log(response.body);
+  }
+});
+program.command("fix").description("Analyze CI failure").argument("<logs>", "CI failure logs").option("--json", "Output as JSON").action(async (logs, options) => {
+  const fixer = new FixerBot();
+  const response = await fixer.handle({
+    body: logs,
+    query: "",
+    isPR: true,
+    number: 0,
+    owner: "cli",
+    repo: "cli",
+    author: "cli"
+  });
+  if (options.json) {
+    console.log(JSON.stringify(response, null, 2));
+  } else {
+    console.log(response.body);
+  }
+});
+program.command("guardian").description("Run enterprise standards checks").option("--json", "Output as JSON").action(async (options) => {
+  const guardian = new GuardianBot();
+  const response = await guardian.handle({
+    body: "",
+    query: "",
+    isPR: true,
+    number: 0,
+    owner: "cli",
+    repo: "cli",
+    author: "cli"
+  });
+  if (options.json) {
+    console.log(JSON.stringify(response, null, 2));
+  } else {
+    console.log(response.body);
+  }
+});
+program.command("harvest").description("Collect PR status").option("--json", "Output as JSON").action(async (options) => {
+  const harvester = new HarvesterBot();
+  const response = await harvester.handle({
+    body: "",
+    query: "",
+    isPR: false,
+    number: 0,
+    owner: "cli",
+    repo: "cli",
+    author: "cli"
+  });
+  if (options.json) {
+    console.log(JSON.stringify(response, null, 2));
+  } else {
+    console.log(response.body);
+  }
 });
 program.command("mcp-server").description("Run the MCP server for Claude/Cursor integration").action(async () => {
   await runMcpServer();

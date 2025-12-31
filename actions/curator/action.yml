@@ -93,69 +93,32 @@ runs:
       id: triage
       shell: bash
       env:
+        GH_TOKEN: ${{ inputs.github_token }}
         OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
         OLLAMA_MODEL: ${{ inputs.model }}
         TITLE: ${{ steps.issue.outputs.title }}
         BODY: ${{ steps.issue.outputs.body }}
       run: |
-        # Pattern-based triage (fast, no LLM needed for obvious cases)
-        LABELS=""
-        PRIORITY="medium"
-        TYPE="chore"
-        EFFORT="m"
-        AGENT="ollama"
+        # Use triage CLI for centralized logic
+        OUTPUT=$(triage curate "$TITLE $BODY" --json)
         
-        # Detect type from title/body
-        COMBINED="$TITLE $BODY"
-        
-        if echo "$COMBINED" | grep -qiE "bug|error|crash|broken|fix|issue|problem"; then
-          TYPE="bug"
-          LABELS="bug"
-          PRIORITY="high"
-          AGENT="cursor"
-        elif echo "$COMBINED" | grep -qiE "feature|add|implement|create|new|enhance"; then
-          TYPE="feature"
-          LABELS="enhancement"
-          PRIORITY="medium"
-          AGENT="jules"
-        elif echo "$COMBINED" | grep -qiE "question|how|what|why|help|confused"; then
-          TYPE="question"
-          LABELS="question"
-          PRIORITY="low"
-          AGENT="sage"
-        elif echo "$COMBINED" | grep -qiE "doc|readme|typo|spelling|grammar"; then
-          TYPE="docs"
-          LABELS="documentation"
-          PRIORITY="low"
-          AGENT="jules"
-        elif echo "$COMBINED" | grep -qiE "refactor|clean|organize|improve|performance"; then
-          TYPE="chore"
-          LABELS="refactor"
-          PRIORITY="medium"
-          AGENT="jules"
-        fi
-        
-        # Detect priority from keywords
-        if echo "$COMBINED" | grep -qiE "urgent|critical|blocker|asap|production|breaking"; then
-          PRIORITY="critical"
-        elif echo "$COMBINED" | grep -qiE "security|vulnerability|cve|exploit"; then
-          PRIORITY="critical"
-          LABELS="$LABELS,security"
-        fi
-        
-        # Detect effort from size indicators
-        if echo "$COMBINED" | grep -qiE "quick|simple|small|minor|trivial"; then
-          EFFORT="xs"
-        elif echo "$COMBINED" | grep -qiE "complex|large|major|overhaul|rewrite"; then
-          EFFORT="xl"
-          AGENT="cursor"
-        fi
-        
+        LABELS=$(echo "$OUTPUT" | jq -r '.addLabels // [] | join(",")')
+        PRIORITY=$(echo "$OUTPUT" | jq -r '.priority // "medium"')
+        TYPE=$(echo "$OUTPUT" | jq -r '.type // "chore"')
+        EFFORT=$(echo "$OUTPUT" | jq -r '.effort // "m"')
+        AGENT=$(echo "$OUTPUT" | jq -r '.agent // "jules"')
+        RESULT_BODY=$(echo "$OUTPUT" | jq -r '.body')
+
         echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
         echo "priority=$PRIORITY" >> "$GITHUB_OUTPUT"
         echo "type=$TYPE" >> "$GITHUB_OUTPUT"
         echo "effort=$EFFORT" >> "$GITHUB_OUTPUT"
         echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
+        {
+          echo "result_body<<EOF"
+          echo "$RESULT_BODY"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
 
     - name: Apply labels
       if: inputs.apply_labels == 'true' && inputs.issue_number != ''
@@ -185,32 +148,9 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
-        TYPE: ${{ steps.triage.outputs.type }}
-        PRIORITY: ${{ steps.triage.outputs.priority }}
-        EFFORT: ${{ steps.triage.outputs.effort }}
-        AGENT: ${{ steps.triage.outputs.agent }}
+        BODY: ${{ steps.triage.outputs.result_body }}
         ISSUE_NUM: ${{ inputs.issue_number }}
         REPO: ${{ inputs.repository }}
       run: |
-        case "$PRIORITY" in
-          critical) P_EMOJI="🔴" ;;
-          high) P_EMOJI="🟠" ;;
-          medium) P_EMOJI="🟡" ;;
-          *) P_EMOJI="⚪" ;;
-        esac
-        
-        cat <<EOF > body.md
-        📋 **@curator** Triage
-
-        | Field | Value |
-        |-------|-------|
-        | Type | \`$TYPE\` |
-        | Priority | $P_EMOJI \`$PRIORITY\` |
-        | Effort | \`$EFFORT\` |
-        | Agent | \`@$AGENT\` |
-
-        ---
-        _Use \`@$AGENT\` to start work on this issue._
-        EOF
-        
+        echo "$BODY" > body.md
         gh issue comment "$ISSUE_NUM" --repo "$REPO" -F body.md 2>/dev/null || true
