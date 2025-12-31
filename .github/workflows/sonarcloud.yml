@@ -16,14 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       # IMPORTANT: fetch-depth: 0 is REQUIRED for SonarCloud blame info
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v4.2.2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       # pnpm version is read from packageManager in package.json
-      - uses: pnpm/action-setup@fe02b34f77f8bc703788d5817da081398fad5dd2 # v4.0.0
+      - uses: pnpm/action-setup@v4
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -57,7 +57,10 @@ jobs:
       # SonarCloud scan - reads coverage from sonar-project.properties
       # sonar.javascript.lcov.reportPaths=coverage/lcov.info
       - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@eb211723266fe8e83102bac7f417b734888c5a69 # v3.2.0
+        uses: SonarSource/sonarcloud-github-action@v5
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectVersion=${{ github.event.pull_request.head.sha || github.sha }}
