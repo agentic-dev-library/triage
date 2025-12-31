@@ -124,7 +124,7 @@ runs:
       env:
         GH_TOKEN: ${{ inputs.github_token }}
       run: |
-        ANSWER="${{ steps.sage.outputs.answer }}"
+        ANSWER="${steps_sage_outputs_answer}"
         AGENT="${{ steps.sage.outputs.agent }}"
         CONFIDENCE="${{ steps.sage.outputs.confidence }}"
         
