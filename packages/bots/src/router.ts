@@ -87,10 +87,17 @@ export class BotRouter {
     extractQuery(body: string, bot: Bot): string {
         let query = body;
 
-        // Remove the trigger
+        // Remove the trigger (case-insensitive)
+        const lowerBody = body.toLowerCase();
         for (const trigger of bot.triggers) {
-            const regex = new RegExp(trigger.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
-            query = query.replace(regex, '');
+            const lowerTrigger = trigger.toLowerCase();
+            if (lowerBody.includes(lowerTrigger)) {
+                // Find the actual case version in the body to replace it
+                const index = lowerBody.indexOf(lowerTrigger);
+                if (index !== -1) {
+                    query = query.slice(0, index) + query.slice(index + trigger.length);
+                }
+            }
         }
 
         return query.trim();

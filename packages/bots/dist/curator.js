@@ -1,6 +1,6 @@
 import {
   CuratorBot
-} from "./chunk-SG56IEL2.js";
+} from "./chunk-XNVM5NM3.js";
 import "./chunk-DGUM43GV.js";
 export {
   CuratorBot

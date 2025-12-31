@@ -17,7 +17,7 @@ import {
   triageTools,
   updateIssueTool,
   visualReviewTool
-} from "./chunk-IFDCJISB.js";
+} from "./chunk-IUH563A4.js";
 import {
   analyzeIssue,
   answerQuestion,
@@ -261,9 +261,17 @@ Respond ONLY with valid JSON (no markdown, no explanation outside JSON):
 }
 function parseEvaluationResponse(response, weights = DEFAULT_WEIGHTS) {
   let json = response;
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (jsonMatch) {
-    json = jsonMatch[1];
+  const backtickIndex = response.indexOf("```");
+  if (backtickIndex !== -1) {
+    const afterFirst = response.slice(backtickIndex + 3);
+    const nextBacktickIndex = afterFirst.indexOf("```");
+    if (nextBacktickIndex !== -1) {
+      let inner = afterFirst.slice(0, nextBacktickIndex);
+      if (inner.trimStart().toLowerCase().startsWith("json")) {
+        inner = inner.trimStart().slice(4);
+      }
+      json = inner;
+    }
   }
   const parsed = JSON.parse(json.trim());
   const scores = {

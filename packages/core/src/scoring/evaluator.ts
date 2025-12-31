@@ -140,9 +140,18 @@ export function parseEvaluationResponse(
 ): { scores: DimensionScores; reasoning: string } {
     // Try to extract JSON from response (handle markdown code blocks)
     let json = response;
-    const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
-    if (jsonMatch) {
-        json = jsonMatch[1];
+    const backtickIndex = response.indexOf('```');
+    if (backtickIndex !== -1) {
+        const afterFirst = response.slice(backtickIndex + 3);
+        const nextBacktickIndex = afterFirst.indexOf('```');
+        if (nextBacktickIndex !== -1) {
+            let inner = afterFirst.slice(0, nextBacktickIndex);
+            // Remove optional 'json' language tag and any leading whitespace
+            if (inner.trimStart().toLowerCase().startsWith('json')) {
+                inner = inner.trimStart().slice(4);
+            }
+            json = inner;
+        }
     }
 
     const parsed = JSON.parse(json.trim());

@@ -4,7 +4,7 @@ function normalizePriority(value) {
     const lower = value.toLowerCase();
     if (lower === "critical" || lower === "highest" || lower === "p0") return "critical";
     if (lower === "high" || lower === "p1") return "high";
-    if (lower === "medium" || lower === "medium" || lower === "p2") return "medium";
+    if (lower === "medium" || lower === "p2") return "medium";
     if (lower === "low" || lower === "p3") return "low";
     if (lower === "lowest" || lower === "backlog" || lower === "p4") return "backlog";
     return "medium";
@@ -54,4 +54,4 @@ export {
   normalizeStatus,
   normalizeType
 };
-//# sourceMappingURL=chunk-V2ADT2NF.js.map
+//# sourceMappingURL=chunk-25D5IUS2.js.map

@@ -1,7 +1,7 @@
 import {
   BotRouter,
   createBotRouter
-} from "./chunk-VLCIAR7C.js";
+} from "./chunk-O2QOPFXP.js";
 import "./chunk-DGUM43GV.js";
 export {
   BotRouter,

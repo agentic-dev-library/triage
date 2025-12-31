@@ -169,7 +169,7 @@ var sageTool = createTool({
 // src/tools/visual.ts
 import { chromium } from "@playwright/test";
 import { z as z5 } from "zod";
-import { createTool as createTool2, resolveModel as resolveModel2 } from "@agentic/triage-ai";
+import { createTool as createTool2 } from "@agentic/triage-ai";
 var visualReviewTool = createTool2({
   description: "Perform a visual review of a web page using Playwright and AI analysis.",
   inputSchema: z5.object({
@@ -192,9 +192,7 @@ var visualReviewTool = createTool2({
       if (scenario) {
         console.log(`Executing scenario: ${scenario}`);
       }
-      const screenshot = await page.screenshot({ fullPage: true });
-      const _base64Screenshot = screenshot.toString("base64");
-      const { model } = await resolveModel2({ provider: "anthropic" });
+      await page.screenshot({ fullPage: true });
       return {
         url,
         status: "success",
@@ -250,4 +248,4 @@ export {
   triageTools,
   getTriageTools
 };
-//# sourceMappingURL=chunk-IFDCJISB.js.map
+//# sourceMappingURL=chunk-IUH563A4.js.map

@@ -21,8 +21,7 @@ Use on a PR to analyze failing checks.`,
   }
   analyzeErrors(body, query) {
     const combined = `${body} ${query}`.toLowerCase();
-    const _commands = [];
-    if (combined.match(/type.*error|typescript|ts\d{4}|cannot find name/)) {
+    if (combined.includes("typescript") || combined.includes("type error") || /ts\d{4}/.test(combined) || combined.includes("cannot find name")) {
       return {
         diagnosis: "TypeScript type errors detected",
         fix: "Fix type annotations and imports",
@@ -31,7 +30,7 @@ Use on a PR to analyze failing checks.`,
         commands: ["pnpm typecheck", "pnpm lint:fix"]
       };
     }
-    if (combined.match(/eslint|lint|biome|prettier|formatting/)) {
+    if (combined.includes("eslint") || combined.includes("lint") || combined.includes("biome") || combined.includes("prettier") || combined.includes("formatting")) {
       return {
         diagnosis: "Linting/formatting errors detected",
         fix: "Run the linter with auto-fix",
@@ -40,7 +39,7 @@ Use on a PR to analyze failing checks.`,
         commands: ["pnpm lint:fix", "pnpm format"]
       };
     }
-    if (combined.match(/test.*fail|expect|assert|vitest|jest|pytest/)) {
+    if (combined.includes("test fail") || combined.includes("expect") || combined.includes("assert") || combined.includes("vitest") || combined.includes("jest") || combined.includes("pytest")) {
       return {
         diagnosis: "Test failures detected",
         fix: "Review and fix failing tests",
@@ -49,7 +48,7 @@ Use on a PR to analyze failing checks.`,
         commands: ["pnpm test", "pnpm test:coverage"]
       };
     }
-    if (combined.match(/build.*fail|compile|bundle|webpack|vite|tsup/)) {
+    if (combined.includes("build fail") || combined.includes("compile") || combined.includes("bundle") || combined.includes("webpack") || combined.includes("vite") || combined.includes("tsup")) {
       return {
         diagnosis: "Build errors detected",
         fix: "Fix compilation issues",
@@ -58,7 +57,7 @@ Use on a PR to analyze failing checks.`,
         commands: ["pnpm build"]
       };
     }
-    if (combined.match(/cannot find module|module not found|import.*error/)) {
+    if (combined.includes("cannot find module") || combined.includes("module not found") || combined.includes("import error")) {
       return {
         diagnosis: "Missing dependencies or imports",
         fix: "Install dependencies and check import paths",
@@ -67,7 +66,7 @@ Use on a PR to analyze failing checks.`,
         commands: ["pnpm install", "pnpm build"]
       };
     }
-    if (combined.match(/permission denied|eacces|eperm/)) {
+    if (combined.includes("permission denied") || combined.includes("eacces") || combined.includes("eperm")) {
       return {
         diagnosis: "Permission issues",
         fix: "Check file permissions or CI configuration",
@@ -76,7 +75,7 @@ Use on a PR to analyze failing checks.`,
         commands: []
       };
     }
-    if (combined.match(/timeout|timed out|deadline exceeded/)) {
+    if (combined.includes("timeout") || combined.includes("timed out") || combined.includes("deadline exceeded")) {
       return {
         diagnosis: "Timeout error",
         fix: "Optimize slow operations or increase timeout",
@@ -85,7 +84,7 @@ Use on a PR to analyze failing checks.`,
         commands: []
       };
     }
-    if (combined.match(/out of memory|heap|oom|memory limit/)) {
+    if (combined.includes("out of memory") || combined.includes("heap") || combined.includes("oom") || combined.includes("memory limit")) {
       return {
         diagnosis: "Memory limit exceeded",
         fix: "Optimize memory usage or increase limits",
@@ -129,4 +128,4 @@ ${severityEmoji[analysis.severity] || "\u26AA"} **Diagnosis**: ${analysis.diagno
 export {
   FixerBot
 };
-//# sourceMappingURL=chunk-XYQJGMFS.js.map
+//# sourceMappingURL=chunk-FPKTGJSN.js.map

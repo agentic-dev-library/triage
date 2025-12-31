@@ -3,7 +3,7 @@ import {
   normalizeStatus,
   normalizeType,
   priorityToNumber
-} from "./chunk-V2ADT2NF.js";
+} from "./chunk-25D5IUS2.js";
 
 // src/jira.ts
 var JiraProvider = class {
@@ -308,4 +308,4 @@ var JiraProvider = class {
 export {
   JiraProvider
 };
-//# sourceMappingURL=chunk-2BZYIJOQ.js.map
+//# sourceMappingURL=chunk-7SUA5ZH4.js.map

@@ -26,9 +26,15 @@ var BotRouter = class {
    */
   extractQuery(body, bot) {
     let query = body;
+    const lowerBody = body.toLowerCase();
     for (const trigger of bot.triggers) {
-      const regex = new RegExp(trigger.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "gi");
-      query = query.replace(regex, "");
+      const lowerTrigger = trigger.toLowerCase();
+      if (lowerBody.includes(lowerTrigger)) {
+        const index = lowerBody.indexOf(lowerTrigger);
+        if (index !== -1) {
+          query = query.slice(0, index) + query.slice(index + trigger.length);
+        }
+      }
     }
     return query.trim();
   }
@@ -93,4 +99,4 @@ export {
   BotRouter,
   createBotRouter
 };
-//# sourceMappingURL=chunk-VLCIAR7C.js.map
+//# sourceMappingURL=chunk-O2QOPFXP.js.map

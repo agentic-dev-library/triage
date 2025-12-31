@@ -129,8 +129,8 @@ type CodeReviewComment = z.infer<typeof CodeReviewCommentSchema>;
  * Query types that Sage can handle
  */
 declare const SageQueryTypeSchema: z.ZodEnum<{
-    review: "review";
     question: "question";
+    review: "review";
     fix: "fix";
     implement: "implement";
     refactor: "refactor";
@@ -157,8 +157,8 @@ type AgentType = z.infer<typeof AgentTypeSchema>;
 declare const EffortSchema: z.ZodEnum<{
     medium: "medium";
     epic: "epic";
-    small: "small";
     trivial: "trivial";
+    small: "small";
     large: "large";
 }>;
 type Effort = z.infer<typeof EffortSchema>;
@@ -168,8 +168,8 @@ type Effort = z.infer<typeof EffortSchema>;
 declare const SageResponseSchema: z.ZodObject<{
     answer: z.ZodString;
     queryType: z.ZodEnum<{
-        review: "review";
         question: "question";
+        review: "review";
         fix: "fix";
         implement: "implement";
         refactor: "refactor";
@@ -212,8 +212,8 @@ declare const SubtaskSchema: z.ZodObject<{
     effort: z.ZodEnum<{
         medium: "medium";
         epic: "epic";
-        small: "small";
         trivial: "trivial";
+        small: "small";
         large: "large";
     }>;
     dependencies: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -236,8 +236,8 @@ declare const TaskDecompositionSchema: z.ZodObject<{
         effort: z.ZodEnum<{
             medium: "medium";
             epic: "epic";
-            small: "small";
             trivial: "trivial";
+            small: "small";
             large: "large";
         }>;
         dependencies: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -246,8 +246,8 @@ declare const TaskDecompositionSchema: z.ZodObject<{
     estimatedTotalEffort: z.ZodEnum<{
         medium: "medium";
         epic: "epic";
-        small: "small";
         trivial: "trivial";
+        small: "small";
         large: "large";
     }>;
     notes: z.ZodOptional<z.ZodString>;
@@ -290,8 +290,8 @@ declare const UnblockResponseSchema: z.ZodObject<{
         effort: z.ZodEnum<{
             medium: "medium";
             epic: "epic";
-            small: "small";
             trivial: "trivial";
+            small: "small";
             large: "large";
         }>;
         likelihood: z.ZodNumber;

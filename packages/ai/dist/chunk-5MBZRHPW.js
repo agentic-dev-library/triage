@@ -116,7 +116,8 @@ async function detectProvider(overrideModel) {
         model: bedrock(modelId2),
         source: process.env.AWS_ACCESS_KEY_ID ? "AWS_ACCESS_KEY_ID" : "AWS_PROFILE"
       };
-    } catch {
+    } catch (e) {
+      console.warn("AWS credentials detected, but failed to load Bedrock provider. Is `@ai-sdk/amazon-bedrock` installed?");
     }
   }
   const { createOllama, ollama } = await import("ai-sdk-ollama");
@@ -325,4 +326,4 @@ export {
   streamText2 as streamText,
   z
 };
-//# sourceMappingURL=chunk-XSDXBODR.js.map
+//# sourceMappingURL=chunk-5MBZRHPW.js.map

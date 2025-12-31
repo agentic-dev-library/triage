@@ -1,9 +1,9 @@
 import {
   CuratorBot
-} from "./chunk-SG56IEL2.js";
+} from "./chunk-XNVM5NM3.js";
 import {
   FixerBot
-} from "./chunk-XYQJGMFS.js";
+} from "./chunk-FPKTGJSN.js";
 import {
   GuardianBot
 } from "./chunk-72TBY2DI.js";
@@ -13,7 +13,7 @@ import {
 import {
   BotRouter,
   createBotRouter
-} from "./chunk-VLCIAR7C.js";
+} from "./chunk-O2QOPFXP.js";
 import {
   SageBot
 } from "./chunk-WGGFDYDD.js";
@@ -73,7 +73,12 @@ var WebhookHandler = class {
   static verifySignature(payload, signature, secret) {
     const crypto = __require("crypto");
     const expected = `sha256=${crypto.createHmac("sha256", secret).update(payload).digest("hex")}`;
-    return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+    const signatureBuffer = Buffer.from(signature);
+    const expectedBuffer = Buffer.from(expected);
+    if (signatureBuffer.length !== expectedBuffer.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
   }
 };
 async function createWebhookServer(port, options = {}) {

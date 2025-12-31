@@ -2,7 +2,7 @@ import {
   normalizePriority,
   normalizeType,
   priorityToNumber
-} from "./chunk-V2ADT2NF.js";
+} from "./chunk-25D5IUS2.js";
 
 // src/github.ts
 import { execFileSync } from "child_process";
@@ -183,4 +183,4 @@ var GitHubProvider = class {
 export {
   GitHubProvider
 };
-//# sourceMappingURL=chunk-C4JTL4CF.js.map
+//# sourceMappingURL=chunk-GYHKK2BD.js.map

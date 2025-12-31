@@ -1,7 +1,7 @@
 import {
   GitHubProvider
-} from "./chunk-C4JTL4CF.js";
-import "./chunk-V2ADT2NF.js";
+} from "./chunk-GYHKK2BD.js";
+import "./chunk-25D5IUS2.js";
 import "./chunk-5WRI5ZAA.js";
 export {
   GitHubProvider
