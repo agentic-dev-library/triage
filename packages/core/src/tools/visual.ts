@@ -31,10 +31,7 @@ export const visualReviewTool = createTool({
                 // For now, we just take a screenshot after navigation
             }
 
-            const screenshot = await page.screenshot({ fullPage: true });
-            const _base64Screenshot = screenshot.toString('base64');
-
-            const { model } = await resolveModel({ provider: 'anthropic' });
+            await page.screenshot({ fullPage: true });
 
             // Here we would call the model with the image
             // Since the Vercel AI SDK handles images in generateText, we can use that

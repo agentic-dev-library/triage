@@ -18,7 +18,10 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import type { File, Reporter, Task, Vitest } from 'vitest';
+type File = any;
+type Reporter = any;
+type Task = any;
+type Vitest = any;
 import type { CoverageData, TestError, TestFile, TestReport, TestResult } from '../test-results.js';
 
 export interface StrataReporterOptions {
