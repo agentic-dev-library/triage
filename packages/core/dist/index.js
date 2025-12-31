@@ -17,7 +17,7 @@ import {
   triageTools,
   updateIssueTool,
   visualReviewTool
-} from "./chunk-ZPIZMU7G.js";
+} from "./chunk-IFDCJISB.js";
 import {
   analyzeIssue,
   answerQuestion,

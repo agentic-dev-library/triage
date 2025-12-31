@@ -193,7 +193,7 @@ var visualReviewTool = createTool2({
         console.log(`Executing scenario: ${scenario}`);
       }
       const screenshot = await page.screenshot({ fullPage: true });
-      const base64Screenshot = screenshot.toString("base64");
+      const _base64Screenshot = screenshot.toString("base64");
       const { model } = await resolveModel2({ provider: "anthropic" });
       return {
         url,
@@ -250,4 +250,4 @@ export {
   triageTools,
   getTriageTools
 };
-//# sourceMappingURL=chunk-ZPIZMU7G.js.map
+//# sourceMappingURL=chunk-IFDCJISB.js.map

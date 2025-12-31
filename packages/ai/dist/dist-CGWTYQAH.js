@@ -926,7 +926,9 @@ function createGroq(options = {}) {
       fetch: options.fetch
     });
   };
-  const provider = (modelId) => createLanguageModel(modelId);
+  const provider = function(modelId) {
+    return createLanguageModel(modelId);
+  };
   provider.specificationVersion = "v3";
   provider.languageModel = createLanguageModel;
   provider.chat = createChatModel;

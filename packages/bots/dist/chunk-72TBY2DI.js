@@ -5,7 +5,6 @@ var GuardianBot = class {
   // Configurable settings
   allowedLicenses = ["MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "ISC", "Unlicense"];
   forbiddenLicenses = ["GPL", "LGPL", "AGPL", "SSPL", "Commons-Clause"];
-  requiredFiles = ["LICENSE", "README.md"];
   async handle(ctx) {
     const query = ctx.query.toLowerCase().trim();
     if (query === "help" || query === "") {
@@ -110,4 +109,4 @@ ${this.forbiddenLicenses.map((l) => `\`${l}\``).join(", ")}`,
 export {
   GuardianBot
 };
-//# sourceMappingURL=chunk-YFSG4XAG.js.map
+//# sourceMappingURL=chunk-72TBY2DI.js.map

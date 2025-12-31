@@ -21,7 +21,7 @@ Use on a PR to analyze failing checks.`,
   }
   analyzeErrors(body, query) {
     const combined = `${body} ${query}`.toLowerCase();
-    const commands = [];
+    const _commands = [];
     if (combined.match(/type.*error|typescript|ts\d{4}|cannot find name/)) {
       return {
         diagnosis: "TypeScript type errors detected",
@@ -129,4 +129,4 @@ ${severityEmoji[analysis.severity] || "\u26AA"} **Diagnosis**: ${analysis.diagno
 export {
   FixerBot
 };
-//# sourceMappingURL=chunk-PT45XHMK.js.map
+//# sourceMappingURL=chunk-XYQJGMFS.js.map

@@ -3397,7 +3397,7 @@ var AnthropicMessagesLanguageModel = class {
                     });
                     break;
                   }
-                  case "tool-call": {
+                  case "tool-call":
                     const isJsonResponseTool = usesJsonResponseTool && contentBlock.toolName === "json";
                     if (!isJsonResponseTool) {
                       controller.enqueue({
@@ -3433,7 +3433,6 @@ var AnthropicMessagesLanguageModel = class {
                       });
                     }
                     break;
-                  }
                 }
                 delete contentBlocks[value.index];
               }

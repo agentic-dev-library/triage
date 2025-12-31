@@ -505,10 +505,10 @@ function filter(obj) {
     const nodes = next;
     next = [];
     for (const node of nodes) {
-      if (Object.hasOwn(node, "__proto__")) {
+      if (Object.prototype.hasOwnProperty.call(node, "__proto__")) {
         throw new SyntaxError("Object contains forbidden prototype property");
       }
-      if (Object.hasOwn(node, "constructor") && Object.hasOwn(node.constructor, "prototype")) {
+      if (Object.prototype.hasOwnProperty.call(node, "constructor") && Object.prototype.hasOwnProperty.call(node.constructor, "prototype")) {
         throw new SyntaxError("Object contains forbidden prototype property");
       }
       for (const key in node) {
@@ -1117,7 +1117,7 @@ var zodPatterns = {
   /**
    * `a-z` was added to replicate /i flag
    */
-  email: /^(?!\.)(?!.*\.\.)([a-zA-Z0-9_'+\-.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/,
+  email: /^(?!\.)(?!.*\.\.)([a-zA-Z0-9_'+\-\.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9\-]*\.)+[a-zA-Z]{2,}$/,
   /**
    * Constructed a valid Unicode RegExp
    *
@@ -1131,7 +1131,10 @@ var zodPatterns = {
    */
   emoji: () => {
     if (emojiRegex === void 0) {
-      emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Component})+$/u;
+      emojiRegex = RegExp(
+        "^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$",
+        "u"
+      );
     }
     return emojiRegex;
   },
@@ -1650,7 +1653,7 @@ function parseObjectDef(def, refs) {
   const required = [];
   const shape = def.shape();
   for (const propName in shape) {
-    const propDef = shape[propName];
+    let propDef = shape[propName];
     if (propDef === void 0 || propDef._def === void 0) {
       continue;
     }
@@ -1956,7 +1959,7 @@ var getRefs = (options) => {
 var zodToJsonSchema = (schema, options) => {
   var _a15;
   const refs = getRefs(options);
-  const definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce(
+  let definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce(
     (acc, [name22, schema2]) => {
       var _a22;
       return {
@@ -3542,11 +3545,11 @@ import { z as z22 } from "zod/v4";
 // ../../node_modules/.pnpm/tslib@2.8.1/node_modules/tslib/tslib.es6.mjs
 function __awaiter(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P((resolve2) => {
+    return value instanceof P ? value : new P(function(resolve2) {
       resolve2(value);
     });
   }
-  return new (P || (P = Promise))((resolve2, reject) => {
+  return new (P || (P = Promise))(function(resolve2, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -3568,7 +3571,7 @@ function __awaiter(thisArg, _arguments, P, generator) {
   });
 }
 function __generator(thisArg, body) {
-  var _ = { label: 0, sent: () => {
+  var _ = { label: 0, sent: function() {
     if (t[0] & 1) throw t[1];
     return t[1];
   }, trys: [], ops: [] }, f, y, t, g = Object.create((typeof Iterator === "function" ? Iterator : Object).prototype);
@@ -3576,7 +3579,9 @@ function __generator(thisArg, body) {
     return this;
   }), g;
   function verb(n) {
-    return (v) => step([n, v]);
+    return function(v) {
+      return step([n, v]);
+    };
   }
   function step(op) {
     if (f) throw new TypeError("Generator is already executing.");
@@ -3638,7 +3643,7 @@ function __values(o) {
   var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
   if (m) return m.call(o);
   if (o && typeof o.length === "number") return {
-    next: () => {
+    next: function() {
       if (o && i >= o.length) o = void 0;
       return { value: o && o[i++], done: !o };
     }
@@ -3662,7 +3667,9 @@ var fromUtf8 = (input) => {
 };
 
 // ../../node_modules/.pnpm/@aws-crypto+util@5.2.0/node_modules/@aws-crypto/util/build/module/convertToBuffer.js
-var fromUtf82 = typeof Buffer !== "undefined" && Buffer.from ? ((input) => Buffer.from(input, "utf8")) : fromUtf8;
+var fromUtf82 = typeof Buffer !== "undefined" && Buffer.from ? function(input) {
+  return Buffer.from(input, "utf8");
+} : fromUtf8;
 function convertToBuffer(data) {
   if (data instanceof Uint8Array)
     return data;
@@ -3710,7 +3717,7 @@ function uint32ArrayFrom(a_lookUpTable2) {
 // ../../node_modules/.pnpm/@aws-crypto+crc32@5.2.0/node_modules/@aws-crypto/crc32/build/module/aws_crc32.js
 var AwsCrc32 = (
   /** @class */
-  (() => {
+  (function() {
     function AwsCrc322() {
       this.crc32 = new Crc32();
     }
@@ -3736,7 +3743,7 @@ var AwsCrc32 = (
 // ../../node_modules/.pnpm/@aws-crypto+crc32@5.2.0/node_modules/@aws-crypto/crc32/build/module/index.js
 var Crc32 = (
   /** @class */
-  (() => {
+  (function() {
     function Crc322() {
       this.checksum = 4294967295;
     }
@@ -4131,33 +4138,29 @@ var HeaderMarshaller = class {
         return Uint8Array.from([header.value ? 0 : 1]);
       case "byte":
         return Uint8Array.from([2, header.value]);
-      case "short": {
+      case "short":
         const shortView = new DataView(new ArrayBuffer(3));
         shortView.setUint8(0, 3);
         shortView.setInt16(1, header.value, false);
         return new Uint8Array(shortView.buffer);
-      }
-      case "integer": {
+      case "integer":
         const intView = new DataView(new ArrayBuffer(5));
         intView.setUint8(0, 4);
         intView.setInt32(1, header.value, false);
         return new Uint8Array(intView.buffer);
-      }
-      case "long": {
+      case "long":
         const longBytes = new Uint8Array(9);
         longBytes[0] = 5;
         longBytes.set(header.value.bytes, 1);
         return longBytes;
-      }
-      case "binary": {
+      case "binary":
         const binView = new DataView(new ArrayBuffer(3 + header.value.byteLength));
         binView.setUint8(0, 6);
         binView.setUint16(1, header.value.byteLength, false);
         const binBytes = new Uint8Array(binView.buffer);
         binBytes.set(header.value, 3);
         return binBytes;
-      }
-      case "string": {
+      case "string":
         const utf8Bytes = this.fromUtf8(header.value);
         const strView = new DataView(new ArrayBuffer(3 + utf8Bytes.byteLength));
         strView.setUint8(0, 7);
@@ -4165,22 +4168,19 @@ var HeaderMarshaller = class {
         const strBytes = new Uint8Array(strView.buffer);
         strBytes.set(utf8Bytes, 3);
         return strBytes;
-      }
-      case "timestamp": {
+      case "timestamp":
         const tsBytes = new Uint8Array(9);
         tsBytes[0] = 8;
         tsBytes.set(Int64.fromNumber(header.value.valueOf()).bytes, 1);
         return tsBytes;
-      }
-      case "uuid": {
+      case "uuid":
         if (!UUID_PATTERN.test(header.value)) {
           throw new Error(`Invalid UUID received: ${header.value}`);
         }
         const uuidBytes = new Uint8Array(17);
         uuidBytes[0] = 9;
-        uuidBytes.set(fromHex(header.value.replace(/-/g, "")), 1);
+        uuidBytes.set(fromHex(header.value.replace(/\-/g, "")), 1);
         return uuidBytes;
-      }
     }
   }
   parse(headers) {
@@ -4230,7 +4230,7 @@ var HeaderMarshaller = class {
           };
           position += 8;
           break;
-        case 6: {
+        case 6:
           const binaryLength = headers.getUint16(position, false);
           position += 2;
           out[name14] = {
@@ -4239,8 +4239,7 @@ var HeaderMarshaller = class {
           };
           position += binaryLength;
           break;
-        }
-        case 7: {
+        case 7:
           const stringLength = headers.getUint16(position, false);
           position += 2;
           out[name14] = {
@@ -4249,7 +4248,6 @@ var HeaderMarshaller = class {
           };
           position += stringLength;
           break;
-        }
         case 8:
           out[name14] = {
             type: TIMESTAMP_TAG,
@@ -4257,7 +4255,7 @@ var HeaderMarshaller = class {
           };
           position += 8;
           break;
-        case 9: {
+        case 9:
           const uuidBytes = new Uint8Array(headers.buffer, headers.byteOffset + position, 16);
           position += 16;
           out[name14] = {
@@ -4265,7 +4263,6 @@ var HeaderMarshaller = class {
             value: `${toHex(uuidBytes.subarray(0, 4))}-${toHex(uuidBytes.subarray(4, 6))}-${toHex(uuidBytes.subarray(6, 8))}-${toHex(uuidBytes.subarray(8, 10))}-${toHex(uuidBytes.subarray(10))}`
           };
           break;
-        }
         default:
           throw new Error(`Unrecognized header type tag`);
       }
@@ -4274,7 +4271,7 @@ var HeaderMarshaller = class {
   }
 };
 var HEADER_VALUE_TYPE;
-((HEADER_VALUE_TYPE2) => {
+(function(HEADER_VALUE_TYPE2) {
   HEADER_VALUE_TYPE2[HEADER_VALUE_TYPE2["boolTrue"] = 0] = "boolTrue";
   HEADER_VALUE_TYPE2[HEADER_VALUE_TYPE2["boolFalse"] = 1] = "boolFalse";
   HEADER_VALUE_TYPE2[HEADER_VALUE_TYPE2["byte"] = 2] = "byte";
@@ -4768,7 +4765,7 @@ var createBedrockEventStreamResponseHandler = (chunkSchema) => async ({ response
                   break;
                 }
                 delete parsedDataResult.value.p;
-                const wrappedData = {
+                let wrappedData = {
                   [(_b15 = decoded.headers[":event-type"]) == null ? void 0 : _b15.value]: parsedDataResult.value
                 };
                 const validatedWrappedData = await safeValidateTypes({
@@ -4944,7 +4941,7 @@ async function shouldEnableCitations(providerMetadata) {
 async function convertToBedrockChatMessages(prompt) {
   var _a15;
   const blocks = groupIntoBlocks(prompt);
-  const system = [];
+  let system = [];
   const messages = [];
   let documentCounter = 0;
   const generateDocumentName = () => `document-${++documentCounter}`;
@@ -5032,7 +5029,7 @@ async function convertToBedrockChatMessages(prompt) {
                       switch (contentPart.type) {
                         case "text":
                           return { text: contentPart.text };
-                        case "media": {
+                        case "media":
                           if (!contentPart.mediaType.startsWith("image/")) {
                             throw new UnsupportedFunctionalityError({
                               functionality: `media type: ${contentPart.mediaType}`
@@ -5047,7 +5044,6 @@ async function convertToBedrockChatMessages(prompt) {
                               source: { bytes: contentPart.data }
                             }
                           };
-                        }
                       }
                     });
                     break;

@@ -13,6 +13,6 @@
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true
     },
-    "include": ["packages/*/src/**/*", "tests/**/*"],
+    "include": ["packages/*/src/**/*", "packages/*/tests/**/*", "tests/**/*"],
     "exclude": ["node_modules", "dist"]
 }

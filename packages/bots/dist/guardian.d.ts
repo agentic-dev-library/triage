@@ -10,7 +10,6 @@ declare class GuardianBot implements Bot {
     triggers: string[];
     private allowedLicenses;
     private forbiddenLicenses;
-    private requiredFiles;
     handle(ctx: BotContext): Promise<BotResponse>;
     private runChecks;
     private formatReport;

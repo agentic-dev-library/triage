@@ -187,7 +187,6 @@ async function getAIProvider(name, modelId) {
       const { bedrock } = await import("./dist-2WVWAF5V.js");
       return { model: bedrock(resolvedModel), modelId: resolvedModel };
     }
-    case "ollama":
     default: {
       const { ollama } = await import("ai-sdk-ollama");
       return { model: ollama(resolvedModel), modelId: resolvedModel };
@@ -326,4 +325,4 @@ export {
   streamText2 as streamText,
   z
 };
-//# sourceMappingURL=chunk-SRXDQD2N.js.map
+//# sourceMappingURL=chunk-XSDXBODR.js.map

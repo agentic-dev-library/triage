@@ -72,8 +72,8 @@ async function createBestProvider(options = {}) {
     return new GitHubProvider({ type: "github", repo });
   }
   try {
-    const { execFileSync: execFileSync2 } = await import("child_process");
-    const remote = execFileSync2("git", ["remote", "get-url", "origin"], {
+    const { execFileSync } = await import("child_process");
+    const remote = execFileSync("git", ["remote", "get-url", "origin"], {
       cwd: workingDir,
       encoding: "utf-8"
     }).trim();

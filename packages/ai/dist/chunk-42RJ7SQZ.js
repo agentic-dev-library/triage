@@ -568,10 +568,10 @@ function filter(obj) {
     const nodes = next;
     next = [];
     for (const node of nodes) {
-      if (Object.hasOwn(node, "__proto__")) {
+      if (Object.prototype.hasOwnProperty.call(node, "__proto__")) {
         throw new SyntaxError("Object contains forbidden prototype property");
       }
-      if (Object.hasOwn(node, "constructor") && Object.hasOwn(node.constructor, "prototype")) {
+      if (Object.prototype.hasOwnProperty.call(node, "constructor") && Object.prototype.hasOwnProperty.call(node.constructor, "prototype")) {
         throw new SyntaxError("Object contains forbidden prototype property");
       }
       for (const key in node) {
@@ -825,7 +825,7 @@ var zodPatterns = {
   /**
    * `a-z` was added to replicate /i flag
    */
-  email: /^(?!\.)(?!.*\.\.)([a-zA-Z0-9_'+\-.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9-]*\.)+[a-zA-Z]{2,}$/,
+  email: /^(?!\.)(?!.*\.\.)([a-zA-Z0-9_'+\-\.]*)[a-zA-Z0-9_+-]@([a-zA-Z0-9][a-zA-Z0-9\-]*\.)+[a-zA-Z]{2,}$/,
   /**
    * Constructed a valid Unicode RegExp
    *
@@ -839,7 +839,10 @@ var zodPatterns = {
    */
   emoji: () => {
     if (emojiRegex === void 0) {
-      emojiRegex = /^(\p{Extended_Pictographic}|\p{Emoji_Component})+$/u;
+      emojiRegex = RegExp(
+        "^(\\p{Extended_Pictographic}|\\p{Emoji_Component})+$",
+        "u"
+      );
     }
     return emojiRegex;
   },
@@ -1358,7 +1361,7 @@ function parseObjectDef(def, refs) {
   const required = [];
   const shape = def.shape();
   for (const propName in shape) {
-    const propDef = shape[propName];
+    let propDef = shape[propName];
     if (propDef === void 0 || propDef._def === void 0) {
       continue;
     }
@@ -1671,7 +1674,7 @@ var getRefs = (options) => {
 var zod3ToJsonSchema = (schema, options) => {
   var _a22;
   const refs = getRefs(options);
-  const definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce(
+  let definitions = typeof options === "object" && options.definitions ? Object.entries(options.definitions).reduce(
     (acc, [name32, schema2]) => {
       var _a32;
       return {
