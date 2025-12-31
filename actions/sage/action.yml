@@ -73,27 +73,27 @@ runs:
         OLLAMA_HOST: ${{ inputs.ollama_host }}
         OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
         OLLAMA_MODEL: ${{ inputs.model }}
+        SAGE_QUERY: ${{ inputs.query }}
+        SAGE_MODE: ${{ inputs.mode }}
       run: |
         set +e
         
-        # Build command based on mode
-        case "${{ inputs.mode }}" in
+        # Build arguments based on mode
+        ARGS=("--json")
+        case "$SAGE_MODE" in
           decompose)
-            CMD="triage sage \"${{ inputs.query }}\" --decompose --json"
+            ARGS+=("--decompose")
             ;;
           route)
-            CMD="triage sage \"${{ inputs.query }}\" --route --json"
+            ARGS+=("--route")
             ;;
           unblock)
-            CMD="triage sage \"${{ inputs.query }}\" --unblock --json"
-            ;;
-          *)
-            CMD="triage sage \"${{ inputs.query }}\" --json"
+            ARGS+=("--unblock")
             ;;
         esac
         
-        echo "Running: $CMD"
-        OUTPUT=$(eval $CMD 2>&1)
+        echo "Running: triage sage [QUERY] ${ARGS[@]}"
+        OUTPUT=$(triage sage "$SAGE_QUERY" "${ARGS[@]}" 2>&1)
         EXIT_CODE=$?
         
         # Parse and set outputs

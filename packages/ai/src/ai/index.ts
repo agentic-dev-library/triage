@@ -167,8 +167,9 @@ export async function detectProvider(overrideModel?: string): Promise<DetectedPr
                 model: bedrock(modelId),
                 source: process.env.AWS_ACCESS_KEY_ID ? 'AWS_ACCESS_KEY_ID' : 'AWS_PROFILE',
             };
-        } catch {
-            // Bedrock not available, fall through
+        } catch (e) {
+            // Bedrock not available, fall through. Log for debugging.
+            console.warn('AWS credentials detected, but failed to load Bedrock provider. Is `@ai-sdk/amazon-bedrock` installed?');
         }
     }
 

@@ -77,14 +77,18 @@ runs:
         MISTRAL_API_KEY: ${{ inputs.mistral_api_key }}
         OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
         TRIAGE_MODEL: ${{ inputs.model }}
+        TRIAGE_BOT: ${{ inputs.bot }}
+        TRIAGE_QUERY: ${{ inputs.query }}
+        TRIAGE_ISSUE: ${{ inputs.issue_number }}
+        TRIAGE_POST: ${{ inputs.post_comment }}
       run: |
         # Install triage CLI
         npm install -g @agentic-dev-library/triage@latest
         
-        BOT="${{ inputs.bot }}"
-        QUERY="${{ inputs.query }}"
-        ISSUE="${{ inputs.issue_number }}"
-        POST="${{ inputs.post_comment }}"
+        BOT="$TRIAGE_BOT"
+        QUERY="$TRIAGE_QUERY"
+        ISSUE="$TRIAGE_ISSUE"
+        POST="$TRIAGE_POST"
         REPO="${{ github.repository }}"
         
         echo "🤖 Running @$BOT..."

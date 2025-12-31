@@ -113,7 +113,14 @@ export class WebhookHandler {
         const crypto = require('node:crypto');
         const expected = `sha256=${crypto.createHmac('sha256', secret).update(payload).digest('hex')}`;
 
-        return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
+        const signatureBuffer = Buffer.from(signature);
+        const expectedBuffer = Buffer.from(expected);
+
+        if (signatureBuffer.length !== expectedBuffer.length) {
+            return false;
+        }
+
+        return crypto.timingSafeEqual(signatureBuffer, expectedBuffer);
     }
 }
 
