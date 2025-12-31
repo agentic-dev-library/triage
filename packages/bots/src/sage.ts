@@ -3,7 +3,7 @@
  */
 
 import type { Bot, BotContext, BotResponse } from './router.js';
-import { sage, decomposeTask, routeToAgent, unblock } from '../handlers/sage.js';
+import { sage, decomposeTask, routeToAgent, unblock } from '@agentic/triage-core';
 
 export class SageBot implements Bot {
     name = 'sage';

@@ -32,9 +32,16 @@
         "access": "public"
     },
     "dependencies": {
+        "@agentic/triage-ai": "workspace:*",
+        "@agentic/triage-trackers": "workspace:*",
+        "@ai-sdk/mcp": "^0.0.1",
+        "@playwright/test": "^1.49.1",
+        "ai": "^6.0.0",
+        "octokit": "^5.0.5",
         "zod": "^4.2.1"
     },
     "devDependencies": {
+        "@types/node": "^22.10.2",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3"
     }

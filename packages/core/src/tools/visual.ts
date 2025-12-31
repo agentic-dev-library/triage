@@ -1,6 +1,6 @@
 import { chromium } from '@playwright/test';
 import { z } from 'zod';
-import { createTool, resolveModel } from '../ai.js';
+import { createTool, resolveModel } from '@agentic/triage-ai';
 
 export const visualReviewTool = createTool({
     description: 'Perform a visual review of a web page using Playwright and AI analysis.',
@@ -32,7 +32,7 @@ export const visualReviewTool = createTool({
             }
 
             const screenshot = await page.screenshot({ fullPage: true });
-            const base64Screenshot = screenshot.toString('base64');
+            const _base64Screenshot = screenshot.toString('base64');
 
             const { model } = await resolveModel({ provider: 'anthropic' });
 

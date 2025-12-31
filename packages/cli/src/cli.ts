@@ -1,10 +1,8 @@
 #!/usr/bin/env node
 import { Command } from 'commander';
-import { resolveModel } from './ai.js';
+import { resolveModel } from '@agentic/triage-ai';
 import {
     type AgentRouting,
-    answerQuestion,
-    classifyQuery,
     decomposeTask,
     routeToAgent,
     type SageResponse,
@@ -12,7 +10,7 @@ import {
     type TaskDecomposition,
     type UnblockResponse,
     unblock,
-} from './handlers/sage.js';
+} from '@agentic/triage-core';
 import { runMcpServer } from './mcp-server.js';
 
 const program = new Command();

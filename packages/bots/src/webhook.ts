@@ -2,9 +2,9 @@
  * Webhook Handler - Process GitHub webhook events and route to bots
  */
 
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModel } from 'ai';
 import { createBotRouter, type BotContext, type BotResponse } from './router.js';
-import { commentOnIssue, commentOnPR } from '../github.js';
+import { commentOnIssue, commentOnPR } from '@agentic/triage-trackers';
 
 export interface WebhookEvent {
     action: string;
@@ -38,7 +38,7 @@ export interface WebhookEvent {
 
 export interface WebhookHandlerOptions {
     /** AI model to use for responses */
-    model?: LanguageModelV1;
+    model?: LanguageModel;
     /** GitHub token for API calls */
     token?: string;
     /** Whether to actually post comments (false for testing) */

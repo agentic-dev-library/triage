@@ -40,7 +40,7 @@ Use on a PR to analyze failing checks.`,
         commands: string[];
     } {
         const combined = `${body} ${query}`.toLowerCase();
-        const commands: string[] = [];
+        const _commands: string[] = [];
 
         // TypeScript errors
         if (combined.match(/type.*error|typescript|ts\d{4}|cannot find name/)) {

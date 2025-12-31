@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { createTool, resolveModel } from '../ai.js';
+import { createTool, resolveModel } from '@agentic/triage-ai';
 import { sage } from '../handlers/sage.js';
 
 export const sageTool = createTool({

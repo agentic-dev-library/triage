@@ -57,11 +57,13 @@
         "access": "public"
     },
     "dependencies": {
-        "@agentic/triage-core": "workspace:*",
         "@agentic/triage-ai": "workspace:*",
-        "@agentic/triage-trackers": "workspace:*"
+        "@agentic/triage-core": "workspace:*",
+        "@agentic/triage-trackers": "workspace:*",
+        "ai": "^6.0.0"
     },
     "devDependencies": {
+        "@types/node": "^22.10.2",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3"
     }

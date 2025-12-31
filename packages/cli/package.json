@@ -32,14 +32,17 @@
         "access": "public"
     },
     "dependencies": {
-        "@agentic/triage-core": "workspace:*",
         "@agentic/triage-ai": "workspace:*",
         "@agentic/triage-bots": "workspace:*",
+        "@agentic/triage-core": "workspace:*",
+        "@agentic/triage-trackers": "workspace:*",
         "@modelcontextprotocol/sdk": "^1.25.1",
         "commander": "^14.0.2",
-        "picocolors": "^1.1.1"
+        "picocolors": "^1.1.1",
+        "zod": "^4.2.1"
     },
     "devDependencies": {
+        "@types/node": "^22.10.2",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3"
     }

@@ -1,169 +1,228 @@
-import { execFileSync, spawnSync } from 'node:child_process';
-
-export interface Issue {
-    number: number;
-    title: string;
-    body: string;
-    labels: string[];
-    state: string;
-}
-
-export interface PullRequest {
-    number: number;
-    title: string;
-    body: string;
-    diff: string;
-    files: string[];
-}
-
 /**
- * Get environment with GitHub token
+ * GitHub Issues Provider
  */
-function getGitHubEnv(): NodeJS.ProcessEnv {
-    const token = process.env.GH_TOKEN || process.env.GITHUB_TOKEN;
-    return token ? { ...process.env, GH_TOKEN: token } : { ...process.env };
-}
 
-/**
- * Run gh CLI command safely using execFileSync
- */
-function gh(args: string[]): string {
-    return execFileSync('gh', args, {
-        encoding: 'utf-8',
-        env: getGitHubEnv(),
-        maxBuffer: 10 * 1024 * 1024, // 10MB for large diffs
-    })
-        .toString()
-        .trim();
-}
+import { execFileSync } from 'node:child_process';
+import {
+    type CreateIssueOptions,
+    type GitHubProviderConfig,
+    type IssuePriority,
+    type IssueType,
+    type ListIssuesOptions,
+    normalizePriority,
+    normalizeType,
+    type ProviderStats,
+    priorityToNumber,
+    type ReadyWork,
+    type TriageIssue,
+    type TriageProvider,
+    type UpdateIssueOptions,
+} from './types.js';
 
-/**
- * Run gh CLI command with stdin input
- */
-function ghWithInput(args: string[], input: string): string {
-    const result = spawnSync('gh', args, {
-        input,
-        encoding: 'utf-8',
-        env: getGitHubEnv(),
-        maxBuffer: 10 * 1024 * 1024,
-    });
+export class GitHubProvider implements TriageProvider {
+    readonly name = 'github';
+    readonly displayName = 'GitHub Issues';
 
-    if (result.error) {
-        throw result.error;
-    }
-    if (result.status !== 0) {
-        throw new Error(result.stderr || `gh command failed with status ${result.status}`);
-    }
-    return result.stdout.trim();
-}
+    private repo: string;
+    private token?: string;
 
-/**
- * Run git command safely using execFileSync
- */
-function git(args: string[]): string {
-    return execFileSync('git', args, {
-        encoding: 'utf-8',
-    })
-        .toString()
-        .trim();
-}
-
-export function getIssue(issueNumber: number): Issue {
-    const json = gh(['issue', 'view', String(issueNumber), '--json', 'number,title,body,labels,state']);
-    const data = JSON.parse(json);
-    return {
-        number: data.number,
-        title: data.title,
-        body: data.body || '',
-        labels: data.labels?.map((l: { name: string }) => l.name) || [],
-        state: data.state,
-    };
-}
-
-export function getPullRequest(prNumber: number): PullRequest {
-    const json = gh(['pr', 'view', String(prNumber), '--json', 'number,title,body,files']);
-    const data = JSON.parse(json);
-
-    // Get the diff separately
-    let diff = '';
-    try {
-        diff = gh(['pr', 'diff', String(prNumber)]);
-    } catch {
-        // Diff might fail for large PRs
+    constructor(config: GitHubProviderConfig) {
+        this.repo = config.repo;
+        this.token = config.token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
     }
 
-    return {
-        number: data.number,
-        title: data.title,
-        body: data.body || '',
-        diff,
-        files: data.files?.map((f: { path: string }) => f.path) || [],
-    };
-}
-
-export function addLabels(issueNumber: number, labels: string[]): void {
-    if (labels.length === 0) return;
-    // Pass labels as comma-separated without shell quoting
-    gh(['issue', 'edit', String(issueNumber), '--add-label', labels.join(',')]);
-}
-
-export function removeLabels(issueNumber: number, labels: string[]): void {
-    if (labels.length === 0) return;
-    gh(['issue', 'edit', String(issueNumber), '--remove-label', labels.join(',')]);
-}
-
-export function commentOnIssue(issueNumber: number, body: string): void {
-    ghWithInput(['issue', 'comment', String(issueNumber), '--body-file', '-'], body);
-}
-
-export function commentOnPR(prNumber: number, body: string): void {
-    ghWithInput(['pr', 'comment', String(prNumber), '--body-file', '-'], body);
-}
-
-// Validate branch name to prevent command injection via --upload-pack etc
-function validateBranchName(name: string): string {
-    if (name.startsWith('-')) {
-        throw new Error(`Invalid branch name: ${name}`);
+    async isReady(): Promise<boolean> {
+        try {
+            this.gh(['repo', 'view', this.repo, '--json', 'name']);
+            return true;
+        } catch {
+            return false;
+        }
     }
-    return name;
-}
 
-export function createBranch(branchName: string, baseBranch = 'main'): void {
-    const safeBranch = validateBranchName(baseBranch);
-    const safeName = validateBranchName(branchName);
-    git(['fetch', 'origin', '--', safeBranch]);
-    git(['checkout', '-b', safeName, `origin/${safeBranch}`]);
-}
+    async createIssue(options: CreateIssueOptions): Promise<TriageIssue> {
+        const args = ['issue', 'create', '--repo', this.repo];
+        args.push('--title', options.title);
+        if (options.description) args.push('--body', options.description);
 
-export function pushBranch(branchName: string): void {
-    const safeName = validateBranchName(branchName);
-    git(['push', '-u', 'origin', '--', safeName]);
-}
+        const labels = [...(options.labels || [])];
+        if (options.type) labels.push(`type:${options.type}`);
+        if (options.priority) labels.push(`priority:${options.priority}`);
 
-export function createPR(title: string, body: string, baseBranch = 'main'): number {
-    const safeBranch = validateBranchName(baseBranch);
-    const output = ghWithInput(
-        ['pr', 'create', '--title', title, '--body-file', '-', '--base', safeBranch, '--json', 'number'],
-        body
-    );
-    return JSON.parse(output).number;
-}
+        if (labels.length > 0) args.push('--label', labels.join(','));
+        if (options.assignee) args.push('--assignee', options.assignee);
 
-export function getDefaultBranch(): string {
-    const json = gh(['repo', 'view', '--json', 'defaultBranchRef']);
-    return JSON.parse(json).defaultBranchRef.name;
-}
+        const result = this.gh(args);
+        const match = result.match(/\/issues\/(\d+)/);
+        const id = match ? match[1] : result.trim();
 
-export interface RepoInfo {
-    owner: string;
-    repo: string;
-}
+        const issue = await this.getIssue(id);
+        if (!issue) throw new Error(`Failed to retrieve created issue ${id}`);
+        return issue;
+    }
 
-export function getRepoInfo(): RepoInfo {
-    const json = gh(['repo', 'view', '--json', 'owner,name']);
-    const data = JSON.parse(json);
-    return {
-        owner: data.owner.login,
-        repo: data.name,
-    };
+    async getIssue(id: string): Promise<TriageIssue | null> {
+        try {
+            const result = this.gh([
+                'issue',
+                'view',
+                id,
+                '--repo',
+                this.repo,
+                '--json',
+                'number,title,body,state,labels,assignees,createdAt,updatedAt,closedAt,url',
+            ]);
+            const data = JSON.parse(result);
+            return this.mapGitHubIssue(data);
+        } catch {
+            return null;
+        }
+    }
+
+    async updateIssue(id: string, options: UpdateIssueOptions): Promise<TriageIssue> {
+        const args = ['issue', 'edit', id, '--repo', this.repo];
+        if (options.title) args.push('--title', options.title);
+        if (options.description) args.push('--body', options.description);
+
+        if (options.labels) args.push('--add-label', options.labels.join(','));
+        if (options.assignee) args.push('--add-assignee', options.assignee);
+        if (options.priority) args.push('--add-label', `priority:${options.priority}`);
+        if (options.type) args.push('--add-label', `type:${options.type}`);
+
+        if (args.length > 4) this.gh(args);
+
+        if (options.status === 'closed') {
+            this.gh(['issue', 'close', id, '--repo', this.repo]);
+        } else if (options.status === 'open') {
+            this.gh(['issue', 'reopen', id, '--repo', this.repo]);
+        }
+
+        const issue = await this.getIssue(id);
+        if (!issue) throw new Error(`Failed to retrieve updated issue ${id}`);
+        return issue;
+    }
+
+    async closeIssue(id: string, reason?: string): Promise<TriageIssue> {
+        const args = ['issue', 'close', id, '--repo', this.repo];
+        if (reason) args.push('--comment', reason);
+        this.gh(args);
+        const issue = await this.getIssue(id);
+        if (!issue) throw new Error(`Failed to retrieve closed issue ${id}`);
+        return issue;
+    }
+
+    async reopenIssue(id: string, reason?: string): Promise<TriageIssue> {
+        const args = ['issue', 'reopen', id, '--repo', this.repo];
+        if (reason) args.push('--comment', reason);
+        this.gh(args);
+        const issue = await this.getIssue(id);
+        if (!issue) throw new Error(`Failed to retrieve reopened issue ${id}`);
+        return issue;
+    }
+
+    async listIssues(options?: ListIssuesOptions): Promise<TriageIssue[]> {
+        const args = [
+            'issue',
+            'list',
+            '--repo',
+            this.repo,
+            '--json',
+            'number,title,body,state,labels,assignees,createdAt,updatedAt,closedAt,url',
+        ];
+
+        if (options?.status) {
+            const statuses = Array.isArray(options.status) ? options.status : [options.status];
+            if (statuses.includes('closed')) args.push('--state', 'closed');
+            else if (statuses.every((s) => s !== 'closed')) args.push('--state', 'open');
+            else args.push('--state', 'all');
+        }
+
+        if (options?.limit) args.push('--limit', String(options.limit));
+        if (options?.assignee) args.push('--assignee', options.assignee);
+
+        const result = this.gh(args);
+        const data = JSON.parse(result);
+        return data.map((item: any) => this.mapGitHubIssue(item));
+    }
+
+    async getReadyWork(options?: { limit?: number; priority?: IssuePriority }): Promise<ReadyWork[]> {
+        const issues = await this.listIssues({
+            status: 'open',
+            limit: options?.limit || 20,
+            priority: options?.priority,
+        });
+        return issues
+            .filter((i) => !i.labels.some((l) => l.toLowerCase().includes('blocked')))
+            .sort((a, b) => priorityToNumber(a.priority) - priorityToNumber(b.priority))
+            .map((issue) => ({ issue }));
+    }
+
+    async getBlockedIssues(): Promise<TriageIssue[]> {
+        const issues = await this.listIssues({ status: 'open' });
+        return issues.filter((i) => i.labels.some((l) => l.toLowerCase().includes('blocked')));
+    }
+
+    async searchIssues(query: string, options?: ListIssuesOptions): Promise<TriageIssue[]> {
+        return this.listIssues({ ...options, titleContains: query });
+    }
+
+    async addLabels(id: string, labels: string[]): Promise<void> {
+        this.gh(['issue', 'edit', id, '--repo', this.repo, '--add-label', labels.join(',')]);
+    }
+
+    async removeLabels(id: string, labels: string[]): Promise<void> {
+        this.gh(['issue', 'edit', id, '--repo', this.repo, '--remove-label', labels.join(',')]);
+    }
+
+    async getStats(): Promise<ProviderStats> {
+        const issues = await this.listIssues({ limit: 1000 });
+        const stats: ProviderStats = {
+            total: issues.length,
+            open: issues.filter((i) => i.status === 'open').length,
+            inProgress: issues.filter((i) => i.status === 'in_progress').length,
+            blocked: issues.filter((i) => i.status === 'blocked').length,
+            closed: issues.filter((i) => i.status === 'closed').length,
+            byPriority: { critical: 0, high: 0, medium: 0, low: 0, backlog: 0 },
+            byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0, docs: 0 },
+        };
+
+        for (const issue of issues) {
+            stats.byPriority[issue.priority]++;
+            stats.byType[issue.type]++;
+        }
+        return stats;
+    }
+
+    private gh(args: string[]): string {
+        const env = { ...process.env };
+        if (this.token) env.GH_TOKEN = this.token;
+        return execFileSync('gh', args, { encoding: 'utf-8', env }).trim();
+    }
+
+    private mapGitHubIssue(data: any): TriageIssue {
+        const labels = (data.labels || []).map((l: any) => (typeof l === 'string' ? l : l.name));
+        let priority: IssuePriority = 'medium';
+        let type: IssueType = 'task';
+
+        for (const label of labels) {
+            if (label.startsWith('priority:')) priority = normalizePriority(label.replace('priority:', ''));
+            if (label.startsWith('type:')) type = normalizeType(label.replace('type:', ''));
+        }
+
+        return {
+            id: String(data.number),
+            title: data.title,
+            description: data.body || undefined,
+            status: data.state === 'closed' ? 'closed' : 'open',
+            priority,
+            type,
+            labels: labels.filter((l: string) => !l.startsWith('priority:') && !l.startsWith('type:')),
+            assignee: data.assignees?.[0]?.login,
+            createdAt: data.createdAt,
+            updatedAt: data.updatedAt,
+            closedAt: data.closedAt || undefined,
+            url: data.url,
+            metadata: { raw: data },
+        };
+    }
 }

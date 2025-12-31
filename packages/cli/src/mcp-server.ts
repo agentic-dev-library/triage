@@ -1,7 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
-import * as octokit from './octokit.js';
+import * as octokit from '@agentic/triage-trackers/octokit';
 
 const server = new McpServer({
     name: 'agentic-triage',

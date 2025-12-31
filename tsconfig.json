@@ -7,13 +7,12 @@
         "declarationMap": true,
         "sourceMap": true,
         "outDir": "./dist",
-        "rootDir": "./src",
         "strict": true,
         "esModuleInterop": true,
         "skipLibCheck": true,
         "forceConsistentCasingInFileNames": true,
         "resolveJsonModule": true
     },
-    "include": ["src/**/*"],
+    "include": ["packages/*/src/**/*", "tests/**/*"],
     "exclude": ["node_modules", "dist"]
 }

@@ -25,6 +25,10 @@
         "./beads": {
             "types": "./dist/beads.d.ts",
             "import": "./dist/beads.js"
+        },
+        "./octokit": {
+            "types": "./dist/octokit.d.ts",
+            "import": "./dist/octokit.js"
         }
     },
     "scripts": {
@@ -44,13 +48,16 @@
         "access": "public"
     },
     "dependencies": {
-        "@agentic/triage-core": "workspace:*",
+        "@agentic/triage-ai": "workspace:*",
+        "@ai-sdk/mcp": "^0.0.1",
+        "ai": "^6.0.0",
         "octokit": "^5.0.5"
     },
     "optionalDependencies": {
         "@linear/sdk": "^68.1.0"
     },
     "devDependencies": {
+        "@types/node": "^22.10.2",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3"
     }

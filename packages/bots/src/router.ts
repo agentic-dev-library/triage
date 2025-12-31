@@ -2,7 +2,7 @@
  * Bot Router - Routes @mentions to appropriate bot handlers
  */
 
-import type { LanguageModelV1 } from 'ai';
+import type { LanguageModel } from 'ai';
 
 export interface BotContext {
     /** The full comment body */
@@ -20,7 +20,7 @@ export interface BotContext {
     /** Comment author */
     author: string;
     /** AI model to use */
-    model?: LanguageModelV1;
+    model?: LanguageModel;
     /** GitHub token */
     token?: string;
 }

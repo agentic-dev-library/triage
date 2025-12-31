@@ -1,0 +1,186 @@
+import {
+  normalizePriority,
+  normalizeType,
+  priorityToNumber
+} from "./chunk-V2ADT2NF.js";
+
+// src/github.ts
+import { execFileSync } from "child_process";
+var GitHubProvider = class {
+  name = "github";
+  displayName = "GitHub Issues";
+  repo;
+  token;
+  constructor(config) {
+    this.repo = config.repo;
+    this.token = config.token || process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+  }
+  async isReady() {
+    try {
+      this.gh(["repo", "view", this.repo, "--json", "name"]);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+  async createIssue(options) {
+    const args = ["issue", "create", "--repo", this.repo];
+    args.push("--title", options.title);
+    if (options.description) args.push("--body", options.description);
+    const labels = [...options.labels || []];
+    if (options.type) labels.push(`type:${options.type}`);
+    if (options.priority) labels.push(`priority:${options.priority}`);
+    if (labels.length > 0) args.push("--label", labels.join(","));
+    if (options.assignee) args.push("--assignee", options.assignee);
+    const result = this.gh(args);
+    const match = result.match(/\/issues\/(\d+)/);
+    const id = match ? match[1] : result.trim();
+    const issue = await this.getIssue(id);
+    if (!issue) throw new Error(`Failed to retrieve created issue ${id}`);
+    return issue;
+  }
+  async getIssue(id) {
+    try {
+      const result = this.gh([
+        "issue",
+        "view",
+        id,
+        "--repo",
+        this.repo,
+        "--json",
+        "number,title,body,state,labels,assignees,createdAt,updatedAt,closedAt,url"
+      ]);
+      const data = JSON.parse(result);
+      return this.mapGitHubIssue(data);
+    } catch {
+      return null;
+    }
+  }
+  async updateIssue(id, options) {
+    const args = ["issue", "edit", id, "--repo", this.repo];
+    if (options.title) args.push("--title", options.title);
+    if (options.description) args.push("--body", options.description);
+    if (options.labels) args.push("--add-label", options.labels.join(","));
+    if (options.assignee) args.push("--add-assignee", options.assignee);
+    if (options.priority) args.push("--add-label", `priority:${options.priority}`);
+    if (options.type) args.push("--add-label", `type:${options.type}`);
+    if (args.length > 4) this.gh(args);
+    if (options.status === "closed") {
+      this.gh(["issue", "close", id, "--repo", this.repo]);
+    } else if (options.status === "open") {
+      this.gh(["issue", "reopen", id, "--repo", this.repo]);
+    }
+    const issue = await this.getIssue(id);
+    if (!issue) throw new Error(`Failed to retrieve updated issue ${id}`);
+    return issue;
+  }
+  async closeIssue(id, reason) {
+    const args = ["issue", "close", id, "--repo", this.repo];
+    if (reason) args.push("--comment", reason);
+    this.gh(args);
+    const issue = await this.getIssue(id);
+    if (!issue) throw new Error(`Failed to retrieve closed issue ${id}`);
+    return issue;
+  }
+  async reopenIssue(id, reason) {
+    const args = ["issue", "reopen", id, "--repo", this.repo];
+    if (reason) args.push("--comment", reason);
+    this.gh(args);
+    const issue = await this.getIssue(id);
+    if (!issue) throw new Error(`Failed to retrieve reopened issue ${id}`);
+    return issue;
+  }
+  async listIssues(options) {
+    const args = [
+      "issue",
+      "list",
+      "--repo",
+      this.repo,
+      "--json",
+      "number,title,body,state,labels,assignees,createdAt,updatedAt,closedAt,url"
+    ];
+    if (options?.status) {
+      const statuses = Array.isArray(options.status) ? options.status : [options.status];
+      if (statuses.includes("closed")) args.push("--state", "closed");
+      else if (statuses.every((s) => s !== "closed")) args.push("--state", "open");
+      else args.push("--state", "all");
+    }
+    if (options?.limit) args.push("--limit", String(options.limit));
+    if (options?.assignee) args.push("--assignee", options.assignee);
+    const result = this.gh(args);
+    const data = JSON.parse(result);
+    return data.map((item) => this.mapGitHubIssue(item));
+  }
+  async getReadyWork(options) {
+    const issues = await this.listIssues({
+      status: "open",
+      limit: options?.limit || 20,
+      priority: options?.priority
+    });
+    return issues.filter((i) => !i.labels.some((l) => l.toLowerCase().includes("blocked"))).sort((a, b) => priorityToNumber(a.priority) - priorityToNumber(b.priority)).map((issue) => ({ issue }));
+  }
+  async getBlockedIssues() {
+    const issues = await this.listIssues({ status: "open" });
+    return issues.filter((i) => i.labels.some((l) => l.toLowerCase().includes("blocked")));
+  }
+  async searchIssues(query, options) {
+    return this.listIssues({ ...options, titleContains: query });
+  }
+  async addLabels(id, labels) {
+    this.gh(["issue", "edit", id, "--repo", this.repo, "--add-label", labels.join(",")]);
+  }
+  async removeLabels(id, labels) {
+    this.gh(["issue", "edit", id, "--repo", this.repo, "--remove-label", labels.join(",")]);
+  }
+  async getStats() {
+    const issues = await this.listIssues({ limit: 1e3 });
+    const stats = {
+      total: issues.length,
+      open: issues.filter((i) => i.status === "open").length,
+      inProgress: issues.filter((i) => i.status === "in_progress").length,
+      blocked: issues.filter((i) => i.status === "blocked").length,
+      closed: issues.filter((i) => i.status === "closed").length,
+      byPriority: { critical: 0, high: 0, medium: 0, low: 0, backlog: 0 },
+      byType: { bug: 0, feature: 0, task: 0, epic: 0, chore: 0, docs: 0 }
+    };
+    for (const issue of issues) {
+      stats.byPriority[issue.priority]++;
+      stats.byType[issue.type]++;
+    }
+    return stats;
+  }
+  gh(args) {
+    const env = { ...process.env };
+    if (this.token) env.GH_TOKEN = this.token;
+    return execFileSync("gh", args, { encoding: "utf-8", env }).trim();
+  }
+  mapGitHubIssue(data) {
+    const labels = (data.labels || []).map((l) => typeof l === "string" ? l : l.name);
+    let priority = "medium";
+    let type = "task";
+    for (const label of labels) {
+      if (label.startsWith("priority:")) priority = normalizePriority(label.replace("priority:", ""));
+      if (label.startsWith("type:")) type = normalizeType(label.replace("type:", ""));
+    }
+    return {
+      id: String(data.number),
+      title: data.title,
+      description: data.body || void 0,
+      status: data.state === "closed" ? "closed" : "open",
+      priority,
+      type,
+      labels: labels.filter((l) => !l.startsWith("priority:") && !l.startsWith("type:")),
+      assignee: data.assignees?.[0]?.login,
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt,
+      closedAt: data.closedAt || void 0,
+      url: data.url,
+      metadata: { raw: data }
+    };
+  }
+};
+
+export {
+  GitHubProvider
+};
+//# sourceMappingURL=chunk-C4JTL4CF.js.map

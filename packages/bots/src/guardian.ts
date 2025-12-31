@@ -17,7 +17,6 @@ export class GuardianBot implements Bot {
     // Configurable settings
     private allowedLicenses = ['MIT', 'Apache-2.0', 'BSD-2-Clause', 'BSD-3-Clause', 'ISC', 'Unlicense'];
     private forbiddenLicenses = ['GPL', 'LGPL', 'AGPL', 'SSPL', 'Commons-Clause'];
-    private requiredFiles = ['LICENSE', 'README.md'];
 
     async handle(ctx: BotContext): Promise<BotResponse> {
         const query = ctx.query.toLowerCase().trim();

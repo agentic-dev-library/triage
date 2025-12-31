@@ -1,5 +1,5 @@
 import { generateObject, type LanguageModel } from 'ai';
-import type { ListIssuesOptions } from '../providers/types.js';
+import type { ListIssuesOptions } from '@agentic/triage-trackers';
 import { IssueTriageSchema } from '../schemas/index.js';
 import type { IssueTriage } from '../schemas/issue.js';
 import type { TriageConnectors } from '../triage/connectors.js';

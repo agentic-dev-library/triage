@@ -11,7 +11,7 @@
  *   const { model } = await getProvider('anthropic', 'claude-3-opus');
  */
 
-import { generateText, streamText, tool, type LanguageModelV1 } from 'ai';
+import { generateText, streamText, tool, type LanguageModel } from 'ai';
 import type { z } from 'zod';
 import { detectProvider, getAIProvider, type DetectedProvider } from './ai/index.js';
 
@@ -20,7 +20,7 @@ export { detectProvider, getAIProvider, getAvailableAIProviders, listAIProviders
 export type { DetectedProvider } from './ai/index.js';
 
 // Tool type (loose to avoid version conflicts)
-export type ToolSet = Record<string, ReturnType<typeof tool>>;
+export type ToolSet = Record<string, any>;
 
 // Cached detected provider
 let cachedProvider: DetectedProvider | null = null;
@@ -42,7 +42,7 @@ export async function getModel(forceRefresh = false): Promise<DetectedProvider> 
 export async function resolveModel(options: {
     provider?: string;
     model?: string;
-} = {}): Promise<{ providerName: string; modelId: string; model: LanguageModelV1 }> {
+} = {}): Promise<{ providerName: string; modelId: string; model: LanguageModel }> {
     if (options.provider) {
         // Explicit provider requested
         const { model, modelId } = await getAIProvider(options.provider, options.model);
@@ -83,7 +83,7 @@ export async function generate(prompt: string, options: GenerateOptions = {}): P
         prompt,
         temperature: options.temperature,
         maxTokens: options.maxTokens,
-    });
+    } as any);
 
     return result.text;
 }
@@ -91,7 +91,7 @@ export async function generate(prompt: string, options: GenerateOptions = {}): P
 /**
  * Stream text using auto-detected or specified provider
  */
-export async function stream(prompt: string, options: GenerateOptions = {}) {
+export async function stream(prompt: string, options: GenerateOptions = {}): Promise<ReturnType<typeof streamText>> {
     const { model } = await resolveModel(options);
 
     return streamText({
@@ -100,7 +100,7 @@ export async function stream(prompt: string, options: GenerateOptions = {}) {
         prompt,
         temperature: options.temperature,
         maxTokens: options.maxTokens,
-    });
+    } as any);
 }
 
 export interface GenerateWithToolsOptions extends GenerateOptions {
@@ -137,7 +137,7 @@ export async function generateWithTools(
         temperature: options.temperature,
         maxTokens: options.maxTokens,
         onStepFinish: options.onStepFinish
-            ? (step) => {
+            ? (step: any) => {
                   options.onStepFinish?.({
                       toolCalls: step.toolCalls,
                       toolResults: step.toolResults,
@@ -145,7 +145,7 @@ export async function generateWithTools(
                   });
               }
             : undefined,
-    });
+    } as any);
 
     // Collect all tool calls and results
     const allToolCalls: unknown[] = [];
@@ -170,12 +170,12 @@ export async function generateWithTools(
  */
 export function createTool<T extends z.ZodType>(config: {
     description: string;
-    parameters: T;
+    inputSchema: T;
     execute: (input: z.infer<T>) => Promise<unknown>;
 }) {
-    return tool({
+    return (tool as any)({
         description: config.description,
-        parameters: config.parameters,
+        parameters: config.inputSchema,
         execute: config.execute,
     });
 }

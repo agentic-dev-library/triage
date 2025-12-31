@@ -73,7 +73,7 @@ describe('GuardianBot Checks', () => {
     });
 
     describe('License Detection', () => {
-        const forbiddenLicenses = ['GPL', 'LGPL', 'AGPL', 'SSPL'];
+        const forbiddenLicenses = ['GPL', 'LGPL', 'AGPL', 'SSPL', 'GENERAL PUBLIC LICENSE'];
         const allowedLicenses = ['MIT', 'Apache-2.0', 'BSD-3-Clause', 'ISC'];
 
         it('should detect forbidden licenses', () => {

@@ -1,0 +1,313 @@
+import {
+  OpenAICompatibleChatLanguageModel,
+  OpenAICompatibleCompletionLanguageModel,
+  OpenAICompatibleEmbeddingModel
+} from "./chunk-LE6HWMXF.js";
+import {
+  combineHeaders,
+  convertImageModelFileToDataUri,
+  createJsonErrorResponseHandler,
+  createJsonResponseHandler,
+  lazySchema,
+  loadApiKey,
+  parseProviderOptions,
+  postJsonToApi,
+  withUserAgentSuffix,
+  withoutTrailingSlash,
+  zodSchema
+} from "./chunk-77EJRXPX.js";
+import "./chunk-4V4FHS4X.js";
+
+// ../../node_modules/.pnpm/@ai-sdk+togetherai@2.0.2_zod@4.2.1/node_modules/@ai-sdk/togetherai/dist/index.mjs
+import { z } from "zod/v4";
+import { z as z2 } from "zod/v4";
+import { z as z3 } from "zod/v4";
+var togetheraiErrorSchema = lazySchema(
+  () => zodSchema(
+    z.object({
+      error: z.object({
+        message: z.string()
+      })
+    })
+  )
+);
+var togetheraiRerankingResponseSchema = lazySchema(
+  () => zodSchema(
+    z.object({
+      id: z.string().nullish(),
+      model: z.string().nullish(),
+      results: z.array(
+        z.object({
+          index: z.number(),
+          relevance_score: z.number()
+        })
+      ),
+      usage: z.object({
+        prompt_tokens: z.number(),
+        completion_tokens: z.number(),
+        total_tokens: z.number()
+      })
+    })
+  )
+);
+var togetheraiRerankingOptionsSchema = lazySchema(
+  () => zodSchema(
+    z2.object({
+      rankFields: z2.array(z2.string()).optional()
+    })
+  )
+);
+var TogetherAIRerankingModel = class {
+  constructor(modelId, config) {
+    this.specificationVersion = "v3";
+    this.modelId = modelId;
+    this.config = config;
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  // see https://docs.together.ai/reference/rerank-1
+  async doRerank({
+    documents,
+    headers,
+    query,
+    topN,
+    abortSignal,
+    providerOptions
+  }) {
+    var _a, _b;
+    const rerankingOptions = await parseProviderOptions({
+      provider: "togetherai",
+      providerOptions,
+      schema: togetheraiRerankingOptionsSchema
+    });
+    const {
+      responseHeaders,
+      value: response,
+      rawValue
+    } = await postJsonToApi({
+      url: `${this.config.baseURL}/rerank`,
+      headers: combineHeaders(this.config.headers(), headers),
+      body: {
+        model: this.modelId,
+        documents: documents.values,
+        query,
+        top_n: topN,
+        rank_fields: rerankingOptions == null ? void 0 : rerankingOptions.rankFields,
+        return_documents: false
+        // reduce response size
+      },
+      failedResponseHandler: createJsonErrorResponseHandler({
+        errorSchema: togetheraiErrorSchema,
+        errorToMessage: (data) => data.error.message
+      }),
+      successfulResponseHandler: createJsonResponseHandler(
+        togetheraiRerankingResponseSchema
+      ),
+      abortSignal,
+      fetch: this.config.fetch
+    });
+    return {
+      ranking: response.results.map((result) => ({
+        index: result.index,
+        relevanceScore: result.relevance_score
+      })),
+      response: {
+        id: (_a = response.id) != null ? _a : void 0,
+        modelId: (_b = response.model) != null ? _b : void 0,
+        headers: responseHeaders,
+        body: rawValue
+      }
+    };
+  }
+};
+var TogetherAIImageModel = class {
+  constructor(modelId, config) {
+    this.modelId = modelId;
+    this.config = config;
+    this.specificationVersion = "v3";
+    this.maxImagesPerCall = 1;
+  }
+  get provider() {
+    return this.config.provider;
+  }
+  async doGenerate({
+    prompt,
+    n,
+    size,
+    seed,
+    providerOptions,
+    headers,
+    abortSignal,
+    files,
+    mask
+  }) {
+    var _a, _b, _c;
+    const warnings = [];
+    if (mask != null) {
+      throw new Error(
+        "Together AI does not support mask-based image editing. Use FLUX Kontext models (e.g., black-forest-labs/FLUX.1-kontext-pro) with a reference image and descriptive prompt instead."
+      );
+    }
+    if (size != null) {
+      warnings.push({
+        type: "unsupported",
+        feature: "aspectRatio",
+        details: "This model does not support the `aspectRatio` option. Use `size` instead."
+      });
+    }
+    const currentDate = (_c = (_b = (_a = this.config._internal) == null ? void 0 : _a.currentDate) == null ? void 0 : _b.call(_a)) != null ? _c : /* @__PURE__ */ new Date();
+    const togetheraiOptions = await parseProviderOptions({
+      provider: "togetherai",
+      providerOptions,
+      schema: togetheraiImageProviderOptionsSchema
+    });
+    let imageUrl;
+    if (files != null && files.length > 0) {
+      imageUrl = convertImageModelFileToDataUri(files[0]);
+      if (files.length > 1) {
+        warnings.push({
+          type: "other",
+          message: "Together AI only supports a single input image. Additional images are ignored."
+        });
+      }
+    }
+    const splitSize = size == null ? void 0 : size.split("x");
+    const { value: response, responseHeaders } = await postJsonToApi({
+      url: `${this.config.baseURL}/images/generations`,
+      headers: combineHeaders(this.config.headers(), headers),
+      body: {
+        model: this.modelId,
+        prompt,
+        seed,
+        n,
+        ...splitSize && {
+          width: parseInt(splitSize[0]),
+          height: parseInt(splitSize[1])
+        },
+        ...imageUrl != null ? { image_url: imageUrl } : {},
+        response_format: "base64",
+        ...togetheraiOptions != null ? togetheraiOptions : {}
+      },
+      failedResponseHandler: createJsonErrorResponseHandler({
+        errorSchema: togetheraiErrorSchema2,
+        errorToMessage: (data) => data.error.message
+      }),
+      successfulResponseHandler: createJsonResponseHandler(
+        togetheraiImageResponseSchema
+      ),
+      abortSignal,
+      fetch: this.config.fetch
+    });
+    return {
+      images: response.data.map((item) => item.b64_json),
+      warnings,
+      response: {
+        timestamp: currentDate,
+        modelId: this.modelId,
+        headers: responseHeaders
+      }
+    };
+  }
+};
+var togetheraiImageResponseSchema = z3.object({
+  data: z3.array(
+    z3.object({
+      b64_json: z3.string()
+    })
+  )
+});
+var togetheraiErrorSchema2 = z3.object({
+  error: z3.object({
+    message: z3.string()
+  })
+});
+var togetheraiImageProviderOptionsSchema = lazySchema(
+  () => zodSchema(
+    z3.object({
+      /**
+       * Number of generation steps. Higher values can improve quality.
+       */
+      steps: z3.number().nullish(),
+      /**
+       * Guidance scale for image generation.
+       */
+      guidance: z3.number().nullish(),
+      /**
+       * Negative prompt to guide what to avoid.
+       */
+      negative_prompt: z3.string().nullish(),
+      /**
+       * Disable the safety checker for image generation.
+       * When true, the API will not reject images flagged as potentially NSFW.
+       * Not available for Flux Schnell Free and Flux Pro models.
+       */
+      disable_safety_checker: z3.boolean().nullish()
+    }).passthrough()
+  )
+);
+var VERSION = true ? "2.0.2" : "0.0.0-test";
+function createTogetherAI(options = {}) {
+  var _a;
+  const baseURL = withoutTrailingSlash(
+    (_a = options.baseURL) != null ? _a : "https://api.together.xyz/v1/"
+  );
+  const getHeaders = () => withUserAgentSuffix(
+    {
+      Authorization: `Bearer ${loadApiKey({
+        apiKey: options.apiKey,
+        environmentVariableName: "TOGETHER_AI_API_KEY",
+        description: "TogetherAI"
+      })}`,
+      ...options.headers
+    },
+    `ai-sdk/togetherai/${VERSION}`
+  );
+  const getCommonModelConfig = (modelType) => ({
+    provider: `togetherai.${modelType}`,
+    url: ({ path }) => `${baseURL}${path}`,
+    headers: getHeaders,
+    fetch: options.fetch
+  });
+  const createChatModel = (modelId) => {
+    return new OpenAICompatibleChatLanguageModel(
+      modelId,
+      getCommonModelConfig("chat")
+    );
+  };
+  const createCompletionModel = (modelId) => new OpenAICompatibleCompletionLanguageModel(
+    modelId,
+    getCommonModelConfig("completion")
+  );
+  const createEmbeddingModel = (modelId) => new OpenAICompatibleEmbeddingModel(
+    modelId,
+    getCommonModelConfig("embedding")
+  );
+  const createImageModel = (modelId) => new TogetherAIImageModel(modelId, {
+    ...getCommonModelConfig("image"),
+    baseURL: baseURL != null ? baseURL : "https://api.together.xyz/v1/"
+  });
+  const createRerankingModel = (modelId) => new TogetherAIRerankingModel(modelId, {
+    ...getCommonModelConfig("reranking"),
+    baseURL: baseURL != null ? baseURL : "https://api.together.xyz/v1/"
+  });
+  const provider = (modelId) => createChatModel(modelId);
+  provider.specificationVersion = "v3";
+  provider.completionModel = createCompletionModel;
+  provider.languageModel = createChatModel;
+  provider.chatModel = createChatModel;
+  provider.embeddingModel = createEmbeddingModel;
+  provider.textEmbeddingModel = createEmbeddingModel;
+  provider.image = createImageModel;
+  provider.imageModel = createImageModel;
+  provider.reranking = createRerankingModel;
+  provider.rerankingModel = createRerankingModel;
+  return provider;
+}
+var togetherai = createTogetherAI();
+export {
+  VERSION,
+  createTogetherAI,
+  togetherai
+};
+//# sourceMappingURL=dist-7Y7JVV5N.js.map
