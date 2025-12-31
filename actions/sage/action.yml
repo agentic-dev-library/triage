@@ -56,7 +56,7 @@ runs:
   using: 'composite'
   steps:
     - name: Setup Node.js
-      uses: actions/setup-node@v6
+      uses: actions/setup-node@v4
       with:
         node-version: '22'
 
@@ -128,22 +128,26 @@ runs:
         SAGE_CONFIDENCE: ${{ steps.sage.outputs.confidence }}
         ISSUE_NUM: ${{ inputs.issue_number }}
       run: |
-        BODY="🔮 **@sage**
+        cat <<'EOF' > body.md
+        🔮 **@sage**
 
-        $SAGE_ANSWER"
-        
+        EOF
+        echo "$SAGE_ANSWER" >> body.md
+
         if [ -n "$SAGE_AGENT" ] && [ "$SAGE_AGENT" != "null" ]; then
-          BODY="$BODY
+          cat <<EOF >> body.md
 
-        📌 **Recommended Agent**: \`@$SAGE_AGENT\`"
+        📌 **Recommended Agent**: \`@$SAGE_AGENT\`
+        EOF
         fi
         
         if [ -n "$SAGE_CONFIDENCE" ] && [ "$SAGE_CONFIDENCE" != "0" ]; then
           PCT=$(echo "$SAGE_CONFIDENCE * 100" | bc | cut -d. -f1)
-          BODY="$BODY
+          cat <<EOF >> body.md
         
-        _(Confidence: ${PCT}%)_"
+        _(Confidence: ${PCT}%)_
+        EOF
         fi
         
-        gh issue comment "$ISSUE_NUM" --body "$BODY" 2>/dev/null || \
-        gh pr comment "$ISSUE_NUM" --body "$BODY" 2>/dev/null || true
+        gh issue comment "$ISSUE_NUM" -F body.md 2>/dev/null || \
+        gh pr comment "$ISSUE_NUM" -F body.md 2>/dev/null || true

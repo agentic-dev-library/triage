@@ -67,9 +67,11 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        ISSUE_NUM: ${{ inputs.issue_number }}
+        REPO: ${{ inputs.repository }}
       run: |
-        if [ -n "${{ inputs.issue_number }}" ]; then
-          ISSUE=$(gh issue view "${{ inputs.issue_number }}" --repo "${{ inputs.repository }}" --json title,body,labels)
+        if [ -n "$ISSUE_NUM" ]; then
+          ISSUE=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json title,body,labels)
           TITLE=$(echo "$ISSUE" | jq -r '.title')
           BODY=$(echo "$ISSUE" | jq -r '.body')
           EXISTING_LABELS=$(echo "$ISSUE" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
@@ -93,10 +95,9 @@ runs:
       env:
         OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
         OLLAMA_MODEL: ${{ inputs.model }}
+        TITLE: ${{ steps.issue.outputs.title }}
+        BODY: ${{ steps.issue.outputs.body }}
       run: |
-        TITLE="${{ steps.issue.outputs.title }}"
-        BODY="${{ steps.issue.outputs.body }}"
-        
         # Pattern-based triage (fast, no LLM needed for obvious cases)
         LABELS=""
         PRIORITY="medium"
@@ -184,12 +185,13 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        TYPE: ${{ steps.triage.outputs.type }}
+        PRIORITY: ${{ steps.triage.outputs.priority }}
+        EFFORT: ${{ steps.triage.outputs.effort }}
+        AGENT: ${{ steps.triage.outputs.agent }}
+        ISSUE_NUM: ${{ inputs.issue_number }}
+        REPO: ${{ inputs.repository }}
       run: |
-        TYPE="${{ steps.triage.outputs.type }}"
-        PRIORITY="${{ steps.triage.outputs.priority }}"
-        EFFORT="${{ steps.triage.outputs.effort }}"
-        AGENT="${{ steps.triage.outputs.agent }}"
-        
         case "$PRIORITY" in
           critical) P_EMOJI="🔴" ;;
           high) P_EMOJI="🟠" ;;
@@ -197,7 +199,8 @@ runs:
           *) P_EMOJI="⚪" ;;
         esac
         
-        BODY="📋 **@curator** Triage
+        cat <<EOF > body.md
+        📋 **@curator** Triage
 
         | Field | Value |
         |-------|-------|
@@ -207,6 +210,7 @@ runs:
         | Agent | \`@$AGENT\` |
 
         ---
-        _Use \`@$AGENT\` to start work on this issue._"
+        _Use \`@$AGENT\` to start work on this issue._
+        EOF
         
-        gh issue comment "${{ inputs.issue_number }}" --body "$BODY" 2>/dev/null || true
+        gh issue comment "$ISSUE_NUM" --repo "$REPO" -F body.md 2>/dev/null || true

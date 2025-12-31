@@ -140,12 +140,13 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
+        DIAGNOSIS: ${{ steps.analyze.outputs.diagnosis }}
+        FIX: ${{ steps.analyze.outputs.fix }}
+        SEVERITY: ${{ steps.analyze.outputs.severity }}
+        CAN_AUTO_FIX: ${{ steps.analyze.outputs.can_auto_fix }}
+        PR_NUM: ${{ inputs.pr_number }}
+        REPO: ${{ inputs.repository }}
       run: |
-        DIAGNOSIS="${{ steps.analyze.outputs.diagnosis }}"
-        FIX="${{ steps.analyze.outputs.fix }}"
-        SEVERITY="${{ steps.analyze.outputs.severity }}"
-        CAN_AUTO_FIX="${{ steps.analyze.outputs.can_auto_fix }}"
-        
         case "$SEVERITY" in
           critical) EMOJI="🔴" ;;
           high) EMOJI="🟠" ;;
@@ -153,16 +154,19 @@ runs:
           *) EMOJI="⚪" ;;
         esac
         
-        BODY="🔧 **@fixer** CI Analysis
+        cat <<EOF > body.md
+        🔧 **@fixer** CI Analysis
 
         $EMOJI **Diagnosis**: $DIAGNOSIS
 
-        💡 **Suggested Fix**: $FIX"
+        💡 **Suggested Fix**: $FIX
+        EOF
         
         if [ "$CAN_AUTO_FIX" = "true" ]; then
-          BODY="$BODY
+          cat <<'EOF' >> body.md
 
-        ✅ This can likely be auto-fixed. Use \`@cascade fix\` to attempt."
+        ✅ This can likely be auto-fixed. Use `@cascade fix` to attempt.
+        EOF
         fi
         
-        gh pr comment "${{ inputs.pr_number }}" --body "$BODY" 2>/dev/null || true
+        gh pr comment "$PR_NUM" --repo "$REPO" -F body.md 2>/dev/null || true

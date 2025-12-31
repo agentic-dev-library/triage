@@ -61,7 +61,7 @@ runs:
   using: 'composite'
   steps:
     - name: Checkout
-      uses: actions/checkout@v6
+      uses: actions/checkout@v4
       with:
         fetch-depth: 0
         token: ${{ inputs.github_token }}
@@ -76,7 +76,7 @@ runs:
         REPO: ${{ inputs.repository }}
         FORBIDDEN: ${{ inputs.forbidden_licenses }}
         REQUIRED: ${{ inputs.required_files }}
-        BRANCH: ${{ github.head_ref }}
+        BRANCH: ${{ github.head_ref || github.ref_name }}
       run: |
         VIOLATIONS=0
         REPORT="[]"
@@ -230,35 +230,37 @@ runs:
         G_VIOLATIONS: ${{ steps.guardian.outputs.violations }}
         G_REPORT: ${{ steps.guardian.outputs.report }}
         G_PR_NUM: ${{ inputs.pr_number }}
+        G_REPO: ${{ inputs.repository }}
       run: |
-        BODY="🛡️ **@guardian** Enterprise Standards Check
+        cat <<'EOF' > body.md
+        🛡️ **@guardian** Enterprise Standards Check
 
         Found **$G_VIOLATIONS** violation(s):
 
         | Check | Status | Details |
-        |-------|--------|---------|"
+        |-------|--------|---------|
+        EOF
         
-        # Parse report and build table
+        # Parse report and build table safely
         while IFS= read -r line; do
           CHECK=$(echo "$line" | jq -r '.check')
           STATUS=$(echo "$line" | jq -r '.status')
-          DETAILS=$(echo "$line" | jq -r '.details // ""')
+          DETAILS=$(echo "$line" | jq -r '.details // "-"')
           
           if [ "$STATUS" = "fail" ]; then
-            BODY="$BODY
-        | $CHECK | ❌ | $DETAILS |"
+            echo "| $CHECK | ❌ | $DETAILS |" >> body.md
           elif [ "$STATUS" = "pass" ]; then
-            BODY="$BODY
-        | $CHECK | ✅ | - |"
+            echo "| $CHECK | ✅ | - |" >> body.md
           fi
         done < <(echo "$G_REPORT" | jq -c '.[]')
         
-        BODY="$BODY
+        cat <<'EOF' >> body.md
 
         ---
-        _Fix these violations to pass the Guardian check._"
+        _Fix these violations to pass the Guardian check._
+        EOF
         
-        gh pr comment "$G_PR_NUM" --body "$BODY" 2>/dev/null || true
+        gh pr comment "$G_PR_NUM" --repo "$G_REPO" -F body.md 2>/dev/null || true
 
     - name: Fail on violations
       if: inputs.fail_on_violation == 'true' && steps.guardian.outputs.violations != '0'
