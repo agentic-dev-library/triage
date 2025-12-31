@@ -1,0 +1,141 @@
+name: '@harvester'
+description: 'PR monitoring, merge queue management, and agent status collection'
+author: 'Jon Bogaty'
+branding:
+  icon: 'git-merge'
+  color: 'yellow'
+
+inputs:
+  command:
+    description: 'Command: status, merge-ready, stale, summary'
+    required: false
+    default: 'status'
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  repository:
+    description: 'Repository owner/repo'
+    required: false
+    default: ${{ github.repository }}
+  pr_number:
+    description: 'Specific PR to check'
+    required: false
+  auto_merge:
+    description: 'Auto-merge ready PRs'
+    required: false
+    default: 'false'
+  stale_days:
+    description: 'Days before PR is considered stale'
+    required: false
+    default: '7'
+
+outputs:
+  total_prs:
+    description: 'Total open PRs'
+  merge_ready:
+    description: 'PRs ready to merge (comma-separated)'
+  needs_review:
+    description: 'PRs needing review'
+  stale:
+    description: 'Stale PRs'
+  merged:
+    description: 'PRs merged in this run'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Harvest PR status
+      id: harvest
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        REPO="${{ inputs.repository }}"
+        COMMAND="${{ inputs.command }}"
+        
+        echo "🌾 Harvesting PR status for $REPO..."
+        
+        # Get all open PRs
+        PRS=$(gh pr list --repo "$REPO" --state open --json number,title,isDraft,mergeable,reviewDecision,updatedAt,labels --limit 100)
+        
+        TOTAL=$(echo "$PRS" | jq 'length')
+        echo "total_prs=$TOTAL" >> "$GITHUB_OUTPUT"
+        
+        # Find merge-ready PRs
+        MERGE_READY=$(echo "$PRS" | jq -r '.[] | select(.isDraft == false and .mergeable == "MERGEABLE" and .reviewDecision == "APPROVED") | .number' | tr '\n' ',' | sed 's/,$//')
+        echo "merge_ready=$MERGE_READY" >> "$GITHUB_OUTPUT"
+        
+        # Find PRs needing review
+        NEEDS_REVIEW=$(echo "$PRS" | jq -r '.[] | select(.isDraft == false and .reviewDecision != "APPROVED") | .number' | tr '\n' ',' | sed 's/,$//')
+        echo "needs_review=$NEEDS_REVIEW" >> "$GITHUB_OUTPUT"
+        
+        # Find stale PRs
+        STALE_DAYS="${{ inputs.stale_days }}"
+        STALE_DATE=$(date -d "$STALE_DAYS days ago" --iso-8601 2>/dev/null || date -v-${STALE_DAYS}d +%Y-%m-%d)
+        STALE=$(echo "$PRS" | jq -r --arg date "$STALE_DATE" '.[] | select(.updatedAt < $date) | .number' | tr '\n' ',' | sed 's/,$//')
+        echo "stale=$STALE" >> "$GITHUB_OUTPUT"
+        
+        echo "📊 Summary:"
+        echo "  Total: $TOTAL"
+        echo "  Merge Ready: $MERGE_READY"
+        echo "  Needs Review: $NEEDS_REVIEW"
+        echo "  Stale: $STALE"
+
+    - name: Auto-merge ready PRs
+      if: inputs.auto_merge == 'true'
+      id: merge
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        MERGE_READY="${{ steps.harvest.outputs.merge_ready }}"
+        MERGED=""
+        
+        for PR in $(echo "$MERGE_READY" | tr ',' ' '); do
+          [ -z "$PR" ] && continue
+          
+          echo "Attempting to merge PR #$PR..."
+          
+          # Check for auto-merge label
+          HAS_LABEL=$(gh pr view "$PR" --repo "${{ inputs.repository }}" --json labels --jq '.labels[].name' | grep -c "auto-merge" || echo "0")
+          
+          if [ "$HAS_LABEL" -gt 0 ]; then
+            if gh pr merge "$PR" --repo "${{ inputs.repository }}" --squash --delete-branch; then
+              echo "✅ Merged PR #$PR"
+              MERGED="$MERGED,$PR"
+            else
+              echo "❌ Failed to merge PR #$PR"
+            fi
+          else
+            echo "⏭️ Skipping PR #$PR (no auto-merge label)"
+          fi
+        done
+        
+        MERGED=$(echo "$MERGED" | sed 's/^,//')
+        echo "merged=$MERGED" >> "$GITHUB_OUTPUT"
+
+    - name: Post summary
+      if: inputs.command == 'summary'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        TOTAL="${{ steps.harvest.outputs.total_prs }}"
+        MERGE_READY="${{ steps.harvest.outputs.merge_ready }}"
+        NEEDS_REVIEW="${{ steps.harvest.outputs.needs_review }}"
+        STALE="${{ steps.harvest.outputs.stale }}"
+        MERGED="${{ steps.merge.outputs.merged }}"
+        
+        echo "### 🌾 Harvester Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "| Metric | Count |" >> $GITHUB_STEP_SUMMARY
+        echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+        echo "| Total Open | $TOTAL |" >> $GITHUB_STEP_SUMMARY
+        echo "| Merge Ready | $(echo "$MERGE_READY" | tr ',' '\n' | grep -c . || echo 0) |" >> $GITHUB_STEP_SUMMARY
+        echo "| Needs Review | $(echo "$NEEDS_REVIEW" | tr ',' '\n' | grep -c . || echo 0) |" >> $GITHUB_STEP_SUMMARY
+        echo "| Stale | $(echo "$STALE" | tr ',' '\n' | grep -c . || echo 0) |" >> $GITHUB_STEP_SUMMARY
+        
+        if [ -n "$MERGED" ]; then
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Merged**: $MERGED" >> $GITHUB_STEP_SUMMARY
+        fi

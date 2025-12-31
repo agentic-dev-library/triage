@@ -1,0 +1,138 @@
+# Drop this file in .github/workflows/ to enable all triage bots
+# No server needed - runs in your GitHub Actions
+#
+# Bots enabled:
+#   @sage - Q&A, task decomposition, agent routing
+#   @curator - Issue triage, labeling
+#   @fixer - CI failure analysis
+#   @harvester - Merge queue management
+#   @guardian - Standards enforcement
+#
+# Configuration:
+#   Set OLLAMA_API_KEY secret for AI-powered responses (optional)
+#   Without it, bots use pattern-based responses
+
+name: Triage Bots
+
+on:
+  issue_comment:
+    types: [created]
+  pull_request_review_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  # ============================================================
+  # @sage - Q&A and guidance
+  # ============================================================
+  sage:
+    if: |
+      github.event_name == 'issue_comment' &&
+      (contains(github.event.comment.body, '@sage') ||
+       contains(github.event.comment.body, '/sage'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/sage@main
+        with:
+          query: ${{ github.event.comment.body }}
+          issue_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          ollama_api_key: ${{ secrets.OLLAMA_API_KEY }}
+
+  # ============================================================
+  # @curator - Auto-triage new issues
+  # ============================================================
+  curator-auto:
+    if: github.event_name == 'issues' && github.event.action == 'opened'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/curator@main
+        with:
+          issue_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          apply_labels: 'true'
+          post_comment: 'true'
+
+  curator-manual:
+    if: |
+      github.event_name == 'issue_comment' &&
+      (contains(github.event.comment.body, '@curator') ||
+       contains(github.event.comment.body, '/curator') ||
+       contains(github.event.comment.body, '/triage'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/curator@main
+        with:
+          issue_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # @fixer - CI failure analysis
+  # ============================================================
+  fixer:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '@fixer') ||
+       contains(github.event.comment.body, '/fixer') ||
+       contains(github.event.comment.body, '/fix'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/fixer@main
+        with:
+          pr_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # @harvester - Merge queue
+  # ============================================================
+  harvester:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '@harvester') ||
+       contains(github.event.comment.body, '/harvester') ||
+       contains(github.event.comment.body, '/mq'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/harvester@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          pr_number: ${{ github.event.issue.number }}
+
+  # ============================================================
+  # @guardian - Standards enforcement on PRs
+  # ============================================================
+  guardian-auto:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/guardian@main
+        with:
+          pr_number: ${{ github.event.pull_request.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          checks: 'sha-pinning,conventional-commits,license'
+          fail_on_violation: 'false'
+
+  guardian-manual:
+    if: |
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      (contains(github.event.comment.body, '@guardian') ||
+       contains(github.event.comment.body, '/guardian') ||
+       contains(github.event.comment.body, '/standards'))
+    runs-on: ubuntu-latest
+    steps:
+      - uses: agentic-dev-library/triage/actions/guardian@main
+        with:
+          pr_number: ${{ github.event.issue.number }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          checks: 'sha-pinning,conventional-commits,license,semver,changelog,required-files'

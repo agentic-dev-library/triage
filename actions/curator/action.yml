@@ -1,0 +1,156 @@
+name: '@curator'
+description: 'AI-powered issue triage, labeling, and assignment - mentionable as @curator'
+author: 'Jon Bogaty'
+branding:
+  icon: 'tag'
+  color: 'orange'
+
+inputs:
+  issue_number:
+    description: 'Issue number to triage'
+    required: false
+  issue_body:
+    description: 'Issue body text (alternative to issue_number)'
+    required: false
+  issue_title:
+    description: 'Issue title'
+    required: false
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  repository:
+    description: 'Repository owner/repo'
+    required: false
+    default: ${{ github.repository }}
+  apply_labels:
+    description: 'Whether to apply suggested labels'
+    required: false
+    default: 'true'
+  apply_assignees:
+    description: 'Whether to apply suggested assignees'
+    required: false
+    default: 'false'
+  post_comment:
+    description: 'Whether to post triage summary as comment'
+    required: false
+    default: 'true'
+  model:
+    description: 'AI model to use'
+    required: false
+    default: 'llama3'
+  ollama_api_key:
+    description: 'Ollama API key'
+    required: false
+
+outputs:
+  labels:
+    description: 'Suggested labels (comma-separated)'
+  priority:
+    description: 'Priority: critical, high, medium, low'
+  type:
+    description: 'Issue type: bug, feature, question, docs, chore'
+  effort:
+    description: 'Effort estimate: xs, s, m, l, xl'
+  agent:
+    description: 'Recommended agent to handle'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '22'
+
+    - name: Get issue details
+      id: issue
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        ISSUE_NUM: ${{ inputs.issue_number }}
+        REPO: ${{ inputs.repository }}
+      run: |
+        if [ -n "$ISSUE_NUM" ]; then
+          ISSUE=$(gh issue view "$ISSUE_NUM" --repo "$REPO" --json title,body,labels)
+          TITLE=$(echo "$ISSUE" | jq -r '.title')
+          BODY=$(echo "$ISSUE" | jq -r '.body')
+          EXISTING_LABELS=$(echo "$ISSUE" | jq -r '.labels[].name' | tr '\n' ',' | sed 's/,$//')
+        else
+          TITLE="${{ inputs.issue_title }}"
+          BODY="${{ inputs.issue_body }}"
+          EXISTING_LABELS=""
+        fi
+        
+        echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+        {
+          echo "body<<EOF"
+          echo "$BODY"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+        echo "existing_labels=$EXISTING_LABELS" >> "$GITHUB_OUTPUT"
+
+    - name: Triage with AI
+      id: triage
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
+        OLLAMA_MODEL: ${{ inputs.model }}
+        TITLE: ${{ steps.issue.outputs.title }}
+        BODY: ${{ steps.issue.outputs.body }}
+      run: |
+        # Use triage CLI for centralized logic
+        OUTPUT=$(triage curate "$TITLE $BODY" --json)
+        
+        LABELS=$(echo "$OUTPUT" | jq -r '.addLabels // [] | join(",")')
+        PRIORITY=$(echo "$OUTPUT" | jq -r '.priority // "medium"')
+        TYPE=$(echo "$OUTPUT" | jq -r '.type // "chore"')
+        EFFORT=$(echo "$OUTPUT" | jq -r '.effort // "m"')
+        AGENT=$(echo "$OUTPUT" | jq -r '.agent // "jules"')
+        RESULT_BODY=$(echo "$OUTPUT" | jq -r '.body')
+
+        echo "labels=$LABELS" >> "$GITHUB_OUTPUT"
+        echo "priority=$PRIORITY" >> "$GITHUB_OUTPUT"
+        echo "type=$TYPE" >> "$GITHUB_OUTPUT"
+        echo "effort=$EFFORT" >> "$GITHUB_OUTPUT"
+        echo "agent=$AGENT" >> "$GITHUB_OUTPUT"
+        {
+          echo "result_body<<EOF"
+          echo "$RESULT_BODY"
+          echo "EOF"
+        } >> "$GITHUB_OUTPUT"
+
+    - name: Apply labels
+      if: inputs.apply_labels == 'true' && inputs.issue_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        LABELS="${{ steps.triage.outputs.labels }}"
+        PRIORITY="${{ steps.triage.outputs.priority }}"
+        
+        # Add priority label
+        case "$PRIORITY" in
+          critical) LABELS="$LABELS,priority:critical" ;;
+          high) LABELS="$LABELS,priority:high" ;;
+          medium) LABELS="$LABELS,priority:medium" ;;
+          low) LABELS="$LABELS,priority:low" ;;
+        esac
+        
+        # Apply labels (creates if they don't exist)
+        for LABEL in $(echo "$LABELS" | tr ',' ' '); do
+          [ -z "$LABEL" ] && continue
+          gh issue edit "${{ inputs.issue_number }}" --repo "${{ inputs.repository }}" --add-label "$LABEL" 2>/dev/null || true
+        done
+
+    - name: Post comment
+      if: inputs.post_comment == 'true' && inputs.issue_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        BODY: ${{ steps.triage.outputs.result_body }}
+        ISSUE_NUM: ${{ inputs.issue_number }}
+        REPO: ${{ inputs.repository }}
+      run: |
+        echo "$BODY" > body.md
+        gh issue comment "$ISSUE_NUM" --repo "$REPO" -F body.md 2>/dev/null || true

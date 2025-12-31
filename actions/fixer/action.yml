@@ -1,0 +1,172 @@
+name: '@fixer'
+description: 'AI-powered CI failure analysis and fix suggestions - mentionable as @fixer in PRs'
+author: 'Jon Bogaty'
+branding:
+  icon: 'tool'
+  color: 'green'
+
+inputs:
+  run_id:
+    description: 'Failed workflow run ID'
+    required: false
+  pr_number:
+    description: 'PR number to analyze'
+    required: false
+  logs:
+    description: 'CI failure logs (alternative to run_id)'
+    required: false
+  github_token:
+    description: 'GitHub token for API access'
+    required: true
+  repository:
+    description: 'Repository owner/repo'
+    required: false
+    default: ${{ github.repository }}
+  post_comment:
+    description: 'Whether to post analysis as comment'
+    required: false
+    default: 'true'
+  model:
+    description: 'AI model to use'
+    required: false
+    default: 'llama3'
+  ollama_api_key:
+    description: 'Ollama API key'
+    required: false
+
+outputs:
+  diagnosis:
+    description: 'Root cause diagnosis'
+  fix:
+    description: 'Suggested fix'
+  severity:
+    description: 'Severity: critical, high, medium, low'
+  can_auto_fix:
+    description: 'Whether this can be auto-fixed'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+      with:
+        node-version: '22'
+
+    - name: Get failure logs
+      id: logs
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+      run: |
+        if [ -n "${{ inputs.logs }}" ]; then
+          echo "Using provided logs"
+          echo "logs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "${{ inputs.logs }}" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+        elif [ -n "${{ inputs.run_id }}" ]; then
+          echo "Fetching logs for run ${{ inputs.run_id }}..."
+          LOGS=$(gh run view "${{ inputs.run_id }}" --repo "${{ inputs.repository }}" --log-failed 2>/dev/null | tail -200 || echo "Failed to fetch logs")
+          echo "logs<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$LOGS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+        elif [ -n "${{ inputs.pr_number }}" ]; then
+          echo "Fetching failed checks for PR #${{ inputs.pr_number }}..."
+          # Get latest failed check run
+          FAILED_RUN=$(gh pr checks "${{ inputs.pr_number }}" --repo "${{ inputs.repository }}" --json name,conclusion,detailsUrl \
+            --jq '.[] | select(.conclusion == "failure") | .name' | head -1)
+          if [ -n "$FAILED_RUN" ]; then
+            echo "logs=Failed check: $FAILED_RUN" >> "$GITHUB_OUTPUT"
+          else
+            echo "logs=No failed checks found" >> "$GITHUB_OUTPUT"
+          fi
+        else
+          echo "logs=No logs source provided" >> "$GITHUB_OUTPUT"
+        fi
+
+    - name: Analyze with AI
+      id: analyze
+      shell: bash
+      env:
+        OLLAMA_API_KEY: ${{ inputs.ollama_api_key }}
+        OLLAMA_MODEL: ${{ inputs.model }}
+      run: |
+        LOGS="${{ steps.logs.outputs.logs }}"
+        
+        # Simple pattern matching for common issues
+        DIAGNOSIS=""
+        FIX=""
+        SEVERITY="medium"
+        CAN_AUTO_FIX="false"
+        
+        if echo "$LOGS" | grep -qi "type.*error\|typescript"; then
+          DIAGNOSIS="TypeScript type errors detected"
+          FIX="Run \`pnpm typecheck\` locally and fix type errors"
+          SEVERITY="high"
+          CAN_AUTO_FIX="true"
+        elif echo "$LOGS" | grep -qi "eslint\|lint"; then
+          DIAGNOSIS="Linting errors detected"
+          FIX="Run \`pnpm lint:fix\` to auto-fix"
+          SEVERITY="medium"
+          CAN_AUTO_FIX="true"
+        elif echo "$LOGS" | grep -qi "test.*fail\|expect\|assert"; then
+          DIAGNOSIS="Test failures detected"
+          FIX="Run tests locally to debug"
+          SEVERITY="high"
+          CAN_AUTO_FIX="false"
+        elif echo "$LOGS" | grep -qi "cannot find module\|module not found"; then
+          DIAGNOSIS="Missing dependencies"
+          FIX="Run \`pnpm install\` and check imports"
+          SEVERITY="high"
+          CAN_AUTO_FIX="true"
+        elif echo "$LOGS" | grep -qi "permission denied\|eacces"; then
+          DIAGNOSIS="Permission issues"
+          FIX="Check file permissions or CI configuration"
+          SEVERITY="medium"
+          CAN_AUTO_FIX="false"
+        else
+          DIAGNOSIS="CI failure - requires manual investigation"
+          FIX="Review the full logs for details"
+          SEVERITY="medium"
+          CAN_AUTO_FIX="false"
+        fi
+        
+        echo "diagnosis=$DIAGNOSIS" >> "$GITHUB_OUTPUT"
+        echo "fix=$FIX" >> "$GITHUB_OUTPUT"
+        echo "severity=$SEVERITY" >> "$GITHUB_OUTPUT"
+        echo "can_auto_fix=$CAN_AUTO_FIX" >> "$GITHUB_OUTPUT"
+
+    - name: Post comment
+      if: inputs.post_comment == 'true' && inputs.pr_number != ''
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github_token }}
+        DIAGNOSIS: ${{ steps.analyze.outputs.diagnosis }}
+        FIX: ${{ steps.analyze.outputs.fix }}
+        SEVERITY: ${{ steps.analyze.outputs.severity }}
+        CAN_AUTO_FIX: ${{ steps.analyze.outputs.can_auto_fix }}
+        PR_NUM: ${{ inputs.pr_number }}
+        REPO: ${{ inputs.repository }}
+      run: |
+        case "$SEVERITY" in
+          critical) EMOJI="🔴" ;;
+          high) EMOJI="🟠" ;;
+          medium) EMOJI="🟡" ;;
+          *) EMOJI="⚪" ;;
+        esac
+        
+        cat <<EOF > body.md
+        🔧 **@fixer** CI Analysis
+
+        $EMOJI **Diagnosis**: $DIAGNOSIS
+
+        💡 **Suggested Fix**: $FIX
+        EOF
+        
+        if [ "$CAN_AUTO_FIX" = "true" ]; then
+          cat <<'EOF' >> body.md
+
+        ✅ This can likely be auto-fixed. Use `@cascade fix` to attempt.
+        EOF
+        fi
+        
+        gh pr comment "$PR_NUM" --repo "$REPO" -F body.md 2>/dev/null || true

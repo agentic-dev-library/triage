@@ -1,0 +1,70 @@
+{
+    "name": "@agentic/triage-bots",
+    "version": "1.0.0",
+    "description": "Mentionable GitHub bots - @sage, @curator, @fixer, @harvester, @guardian",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        },
+        "./sage": {
+            "types": "./dist/sage.d.ts",
+            "import": "./dist/sage.js"
+        },
+        "./curator": {
+            "types": "./dist/curator.d.ts",
+            "import": "./dist/curator.js"
+        },
+        "./fixer": {
+            "types": "./dist/fixer.d.ts",
+            "import": "./dist/fixer.js"
+        },
+        "./harvester": {
+            "types": "./dist/harvester.d.ts",
+            "import": "./dist/harvester.js"
+        },
+        "./guardian": {
+            "types": "./dist/guardian.d.ts",
+            "import": "./dist/guardian.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "keywords": [
+        "bot",
+        "github-bot",
+        "sage",
+        "curator",
+        "fixer",
+        "harvester",
+        "guardian",
+        "automation"
+    ],
+    "author": "Jon Bogaty <jon@jonbogaty.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/agentic-dev-library/triage.git",
+        "directory": "packages/bots"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "dependencies": {
+        "@agentic/triage-ai": "workspace:*",
+        "@agentic/triage-core": "workspace:*",
+        "@agentic/triage-trackers": "workspace:*",
+        "ai": "^6.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.3"
+    }
+}

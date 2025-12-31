@@ -51,3 +51,5 @@ memory-bank/
 ! .cursor/Dockerfile
 ! .cursor/environment.json
 ! .cursor/mcp.json
+node_modules/
+node-compile-cache/

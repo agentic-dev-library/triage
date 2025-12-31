@@ -6,40 +6,124 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   pull-requests: write
 
 jobs:
-  ci:
-    name: Build, Lint & Test
+  lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
           cache: 'pnpm'
-      - name: Install dependencies
-        run: pnpm install --no-frozen-lockfile
-      - name: Lint & Format Check
-        run: pnpm run check
-      - name: Build
-        run: pnpm run build
-      - name: Test
-        run: pnpm run test:coverage
-      - name: Report Coverage
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm run check
+
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm typecheck
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm build
+      - name: Run unit tests with coverage
+        run: pnpm test:coverage
+      - name: Upload coverage to Coveralls
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/lcov.info
+          flag-name: unit
+          parallel: true
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm build
+      - name: Run integration tests with coverage
+        run: pnpm test:integration -- --coverage
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/lcov.info
+          flag-name: integration
+          parallel: true
+
+  coverage-finish:
+    name: Finish Coverage
+    needs: [test, test-integration]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Finish Coveralls parallel build
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          parallel-finished: true
+          carryforward: 'unit,integration'
+
+  build:
+    name: Build
+    needs: [lint, typecheck]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --no-frozen-lockfile
+      - run: pnpm build
+      - name: Verify builds
+        run: |
+          for pkg in packages/*/; do
+            if [ -d "$pkg/dist" ]; then
+              echo "✅ $pkg built successfully"
+            else
+              echo "⚠️ $pkg has no dist"
+            fi
+          done
 
   release:
     name: Release
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    needs: ci
+    needs: [build, test, test-integration]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -49,8 +133,6 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.CI_GITHUB_TOKEN }}
       - uses: pnpm/action-setup@v4
-        with:
-          version: 9
       - uses: actions/setup-node@v4
         with:
           node-version: '22'

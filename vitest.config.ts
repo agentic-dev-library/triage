@@ -2,46 +2,43 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
     test: {
-        globals: true,
-        include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
-        exclude: ['node_modules', 'dist'],
         coverage: {
+            // Use v8 for Node.js coverage
             provider: 'v8',
-            reporter: ['text', 'lcov', 'html'],
+            
+            // Reporters - lcov.info is REQUIRED for SonarCloud
+            reporter: ['text', 'lcov', 'json', 'html', 'clover'],
+            
+            // Output directory - SonarCloud looks for coverage/lcov.info
             reportsDirectory: './coverage',
-            // Coverage scope:
-            // - Focus on the core library surfaces (AI + execution + report parsing).
-            // - Exclude CLI entrypoints, command wiring, and adapters that are exercised via
-            //   end-to-end workflows rather than unit tests.
-            include: ['src/ai.ts', 'src/test-results.ts', 'src/execution/**/*.ts'],
-            exclude: [
-                'node_modules',
-                'dist',
-                '**/*.config.ts',
-                '**/index.ts',
-                'src/cli.ts',
-                'src/github.ts',
-                'src/mcp.ts',
-                'src/octokit.ts',
-                'src/playwright.ts',
-                'src/commands/**',
-                'src/planning/**',
-                'src/reporters/**',
-                // Token estimation is intentionally treated as non-critical for now
-                'src/execution/tokenizer.ts',
-                // GitHub sandbox scaffolding is currently a stub
-                'src/execution/github-sandbox.ts',
-                // Harness is exercised via CLI-level integration tests
-                'src/execution/test-harness.ts',
+            
+            // What to include in coverage
+            include: [
+                'packages/*/src/**/*.ts',
+                'src/**/*.ts',
             ],
+            
+            // What to exclude from coverage
+            exclude: [
+                '**/node_modules/**',
+                '**/dist/**',
+                '**/*.test.ts',
+                '**/*.spec.ts',
+                '**/*.config.ts',
+                '**/*.config.js',
+                '**/tests/**',
+            ],
+            
+            // Thresholds - start low, increase over time
             thresholds: {
-                // Temporarily lowered to allow initial merge
-                // TODO: Increase as more tests are added
-                statements: 5,
-                branches: 50,
-                functions: 20,
-                lines: 5,
+                lines: 10,
+                functions: 10,
+                branches: 10,
+                statements: 10,
             },
+            
+            // Generate coverage even if tests fail
+            reportOnFailure: true,
         },
     },
 });

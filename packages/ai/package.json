@@ -1,0 +1,63 @@
+{
+    "name": "@agentic/triage-ai",
+    "version": "1.0.0",
+    "description": "Auto-detecting AI provider integration - just set your API key",
+    "type": "module",
+    "main": "./dist/index.js",
+    "types": "./dist/index.d.ts",
+    "exports": {
+        ".": {
+            "types": "./dist/index.d.ts",
+            "import": "./dist/index.js"
+        }
+    },
+    "scripts": {
+        "build": "tsup",
+        "dev": "tsup --watch",
+        "typecheck": "tsc --noEmit"
+    },
+    "keywords": [
+        "ai",
+        "vercel-ai-sdk",
+        "auto-detect",
+        "anthropic",
+        "openai",
+        "google",
+        "groq",
+        "mistral",
+        "ollama",
+        "bedrock"
+    ],
+    "author": "Jon Bogaty <jon@jonbogaty.com>",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/agentic-dev-library/triage.git",
+        "directory": "packages/ai"
+    },
+    "publishConfig": {
+        "access": "public"
+    },
+    "dependencies": {
+        "ai": "^6.0.0",
+        "ai-sdk-ollama": "^3.0.0",
+        "zod": "^4.2.1"
+    },
+    "optionalDependencies": {
+        "@ai-sdk/anthropic": "^3.0.1",
+        "@ai-sdk/openai": "^3.0.2",
+        "@ai-sdk/google": "^3.0.1",
+        "@ai-sdk/groq": "^3.0.0",
+        "@ai-sdk/mistral": "^3.0.0",
+        "@ai-sdk/deepseek": "^2.0.2",
+        "@ai-sdk/xai": "^3.0.0",
+        "@ai-sdk/togetherai": "^2.0.2",
+        "@ai-sdk/azure": "^3.0.0",
+        "@ai-sdk/amazon-bedrock": "^3.0.0"
+    },
+    "devDependencies": {
+        "@types/node": "^22.10.2",
+        "tsup": "^8.5.0",
+        "typescript": "^5.9.3"
+    }
+}
